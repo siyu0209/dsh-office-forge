@@ -7,9 +7,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { assertSupportedJsonSchema } from "@deepseek-ai/dsh-tools";
 import { apply, Config, inject, name } from "../lib/index.js";
+import { pythonPath } from "./test_env.mjs";
 
-const PYTHON = process.env.OFFICEFORGE_PYTHON
-  || "C:/Users/zhoutao/DSH 官方 0.2.2/app/profile/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe";
+const PYTHON = pythonPath();
 
 const workspace = mkdtempSync(join(tmpdir(), "officeforge-compat-"));
 const registered = new Map();

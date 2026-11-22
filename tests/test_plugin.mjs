@@ -4,9 +4,9 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } 
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { apply, Config, inject, name } from "../lib/index.js";
+import { pythonPath } from "./test_env.mjs";
 
-const PYTHON = process.env.OFFICEFORGE_PYTHON
-  || "C:/Users/zhoutao/DSH 官方 0.2.2/app/profile/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe";
+const PYTHON = pythonPath();
 
 const workspace = mkdtempSync(join(tmpdir(), "officeforge-plugin-"));
 const kitRoot = join(workspace, "kit-out");

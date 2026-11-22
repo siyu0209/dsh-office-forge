@@ -13,10 +13,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dshClientModulesPath } from './test_env.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(root, '..');
-const hostClientModules = 'C:/Users/zhoutao/DSH 官方 0.2.2/app/resources/app/dsh/node_modules/@deepseek-ai/dsh-client-modules/lib/client.js';
+const hostClientModules = dshClientModulesPath();
+if (!hostClientModules) {
+  console.log('CLIENT HOST MACHINERY TESTS SKIPPED (host checkout not found)');
+  process.exit(0);
+}
 
 const queued = [];
 globalThis.window = {

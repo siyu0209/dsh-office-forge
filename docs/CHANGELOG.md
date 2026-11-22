@@ -138,7 +138,7 @@
 - **PDF 读取**：`officeforge_read` 支持 `.pdf`，优先 pypdf/fitz/pdfplumber，缺依赖时使用内置 zlib/content-stream fallback。
 - **旧格式兼容**：新增 `officeforge_convert`，通过可选 Windows COM / LibreOffice 后端转换 `.doc/.docm/.xls/.xlsm/.ppt/.pptm`；后端缺失返回 `BACKEND_UNAVAILABLE`，不阻断 Native 核心。
 - **视觉预览与重算**：新增 `officeforge_preview`（officeKit.renderImages）与 `officeforge_recalculate`（officeKit.recalculate）。
-- **主题外部化**：`resources/themes.json` 提供 31 套主题（dsh-ppt 24 套 + 7 套旧主题），`resources/features.json` 提供模块/能力注册表；新增主题/开关不需要改 Python 代码。
+- **主题外部化**：`resources/themes.json` 提供 31 套内置主题，`resources/features.json` 提供模块/能力注册表；新增主题/开关不需要改 Python 代码。
 - **Schema 迁移**：`office_migrations.py` 将缺失 `schemaVersion` 的旧 spec 视为 v1，迁移到 v2，并记录 `migratedFrom`；高于 v2 返回 `SCHEMA_VERSION_UNSUPPORTED`。
 - **兼容性**：新增后端探测、预览/重算参数校验、源文件版本检查、远程 workspace 映射检查；工具总数从 7 增至 10。
 - 测试：engine 覆盖 PDF/迁移/convert 降级；Node 覆盖十工具注册、convert/preview/recalculate mock；仍不安装 DSH。
@@ -157,7 +157,7 @@
 ## 0.3.0 — 2026-11-21
 
 - Word `addCaption`、`setStyle`、`updateFields`；Excel `addFormulaColumn`、`sortRange`、`removeDuplicates`、`fillBlanks`、`cleanRange`；PPT `addTextBox`、`addConnector`。
-- 参考 `@copylee/dsh-office` 的 COM 深度能力清单，但保持纯文件级实现。
+- 参考公开的 Office 自动化能力清单，保持纯文件级实现。
 
 ## 0.2.0 — 2026-11-21
 

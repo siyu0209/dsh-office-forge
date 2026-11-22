@@ -4,9 +4,9 @@ import { mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { Config, apply } from "../lib/index.js";
+import { pythonPath } from "./test_env.mjs";
 
-const PYTHON = process.env.OFFICEFORGE_PYTHON
-  || "C:/Users/zhoutao/DSH 官方 0.2.2/app/profile/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe";
+const PYTHON = pythonPath();
 
 const workspace = mkdtempSync(join(tmpdir(), "officeforge-config-"));
 const registered = new Map();

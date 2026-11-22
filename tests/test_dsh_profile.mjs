@@ -12,9 +12,13 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { dshCli as resolveDshCli } from './test_env.mjs';
 
-const dshCli = 'C:/Users/zhoutao/DSH 官方 0.2.2/app/resources/app/dsh/node_modules/@deepseek-ai/dsh/lib/bin.js';
-if (!existsSync(dshCli)) throw new Error(`DSH CLI not found: ${dshCli}`);
+const dshCli = resolveDshCli();
+if (!dshCli) {
+  console.log('DSH PROFILE TESTS SKIPPED (host checkout not found)');
+  process.exit(0);
+}
 
 const tarball = resolve(
   import.meta.dirname,

@@ -1,51 +1,68 @@
-# Office Forge 文档锻造台
+# Office Forge
 
-Office Forge 是一个面向 DeepSeek Harness（DSH）的 Office 文档插件。它把 Word、Excel、PowerPoint、PDF 的读写、创建、编辑、模板填充、审计、批量处理、PDF 合并/拆分/旋转/水印、旧格式转换、视觉预览、公式重算、PDF 导出和可选 Microsoft Office COM 原生操作集中到一组十三个独立的 `officeforge_*` 工具里，所有文档逻辑由短生命周期的 Python 子进程执行，Node 层只负责路径授权、参数校验、子进程调度和宿主 `officeKit` 导出。
+**面向 DeepSeek Harness（DSH）的 Office 文档自动化工具箱。**
 
-> 当前仓库包含插件源码与离线测试。安装到 DSH profile 是可选项，步骤见「安装」一节。
+Office Forge 是一个自包含的 DSH 插件包，为 Agent 提供十三个互相独立的工具，用来处理 Word、Excel、PowerPoint 和 PDF 文件。它可以读取、创建、编辑、审计、预览、转换、批量处理和填充模板，不需要启动 Office 界面。所有文档处理都在短生命周期的 Python 子进程中完成；Node 层只负责工作区授权、参数校验、子进程传输和可选的宿主集成。
 
-## 工具
+插件为独立实现，不捆绑任何第三方 Office 运行时，也不依赖其他文档插件。
 
-| 工具 | 作用 |
+## 主要特性
+
+- **一套工具覆盖四种格式**：`.docx`、`.xlsx`、`.pptx`、`.pdf`。
+- **默认文件级处理**：直接处理磁盘上的文件，不要求安装 Microsoft Office。
+- **可选真实后端**：只有检测到 Microsoft Office COM 或 LibreOffice 时才使用。
+- **模板友好**：支持 `{{key}}` 占位符和一层 `{{#each items}}...{{/each}}` 表格/工作表行循环。
+- **内置审计**：Word 标题质量、Excel 公式健康/画像/洞察/差异、PowerPoint 页面质量与主题目录。
+- **适合 Agent 调用**：所有工具接收并返回无损 JSON，提供稳定错误码。
+- **工作区安全**：词法路径检查 + 宿主路径检查、原子写入、输入输出限额、无递归。
+- **可配置**：Word、Excel、PowerPoint、PDF 的模块与细粒度功能开关。
+- **可诊断**：`officeforge_doctor` 和插件页只读卡片会明确报告缺少哪些可选后端。
+
+## 环境要求
+
+| 组件 | 要求 |
 |---|---|
-| `officeforge_read` | 读取 `.docx` / `.xlsx` / `.pptx` / `.pdf`，Office 支持 `content`、`outline`、`search` 三种模式，输出 markdown / text / json；PDF 支持文本/markdown 提取。 |
-| `officeforge_create` | 用声明式 spec 新建文档；docx 用 `title/subtitle/sections`，xlsx 用 `sheets`（或 `import` 从 CSV/TSV/JSON 导入），pptx 用 `slideSize/slides`，也可只给 `template`（board/project/pitch/academic/training/sales/report/product/strategy/minimal）生成整套成品 deck，或用 `master` 设置母版背景与页眉页脚。Excel 图表支持 `combo` 主/次坐标轴组合图；PPT 的 `layout` 支持 38 个版式库（kpi/timeline/cards/comparison/matrix/quote/image-* 等）。 |
-| `officeforge_edit` | 对现有文档执行有界操作：docx `replace/append/addImage/addToc/addCaption/setStyle/updateFields/addComment/trackRevision/mailMerge/addFootnote/addBookmark/addCrossReference/addCitation/addBibliography/setColumns/addWatermark/addContentControl/saveAsTemplate/setCore`；xlsx `setCells/appendRows/replace/createSheet/deleteSheet/renameSheet/setColumnWidths/setFreeze/setAutoFilter/addChart/addConditionalFormatting/addDataValidation/addComment/mergeCells/addImage/addFormulaColumn/sortRange/removeDuplicates/fillBlanks/cleanRange/pivotSummary/addTable/protectSheet/protectWorkbook`；pptx `replace/appendSlides/setNotes/setNotesBatch/addSection/listSections/deleteSlide/moveSlide/setTransition/addShape/addTextBox/addConnector/addAnimation/addSmartArt/addComment/listComments/addMedia/applyMaster/applyTheme/setCore`。默认生成同目录备份。 |
-| `officeforge_template` | 用 JSON 或 `.json/.csv/.tsv` 数据填充模板：`{{key}}` 占位符，Word/Excel 额外支持一层 `{{#each items}}...{{/each}}` 表格行/工作表行循环。 |
-| `officeforge_audit` | 只读审计：Word 支持 `health`（标题跳级、重复标题、孤立标题、未清除占位符、超长段落、连续空段落）与 `profile`；Excel 支持 `health`（公式错误、同列公式模式不一致、公式列硬编码、空行断链、循环引用）、`profile`、`insight`、`diff`；PowerPoint 支持 `deck` 质量检查、`profile`、`themes` 主题列表、`layouts` 版式目录、`templates` 模板目录（后三者可省略 `path`）。 |
-| `officeforge_doctor` | 只读运行时诊断：检查 Python 与 python-docx/openpyxl/python-pptx、内置 PDF 引擎、COM/LibreOffice 后端、Office 应用注册、`officeKit` 服务、客户端 bundle 以及当前 modules/features 配置；每项标注 required/optional、当前状态和缺失时的补救建议。安装后先运行它即可判断哪些能力可用。 |
-| `officeforge_convert` | 旧格式 `.doc/.docm/.xls/.xlsm/.ppt/.pptm` 通过可选 COM/LibreOffice 后端转换；现代格式与 PDF 走宿主 `officeKit`。 |
-| `officeforge_pdf` | 文件级 PDF 工具：`merge` 合并、`split` 拆分、`rotate` 旋转、`watermark` 水印、`pageNumbers` 页码、`formFields` 表单字段、`fillForm` 填表、`extractImages` 提取图片、`ocr` OCR、`encrypt`/`decrypt` 加密解密；使用包内 vendor 的 pypdf，不依赖外部 PDF 服务。 |
-| `officeforge_native` | 可选 Microsoft Office COM 原生操作：`convert`、`exportPdf`、`acceptRevisions`、`recalculate`、`pivot`（原生 PivotTable）、`smartArt`（原生 SmartArt）；需要 Windows + Office + pywin32。 |
-| `officeforge_preview` | 通过宿主 `officeKit.renderImages` 渲染页面/幻灯片/工作表区域为 PNG，不启动 Office UI。 |
-| `officeforge_recalculate` | 通过宿主 `officeKit.recalculate` 做真实公式重算并保存新工作簿，不使用公式文本近似。 |
-| `officeforge_batch` | 在一次 Python 调用里执行多个独立的 create/edit/template 任务；每项单独返回成功或失败，互不回滚、不允许嵌套。 |
-| `officeforge_export` | 通过宿主 `officeKit` 将文档转换为 PDF 等格式；可选把结果复制回工作目录。 |
+| DSH | `>= 0.2.2-rc.5` |
+| Node.js | `>= 20` |
+| Python | Python 3.12，安装 `python-docx`、`openpyxl`、`python-pptx`；DSH 捆绑运行时已包含 |
+| PDF | 插件内置 `pypdf`，不需要外部 PDF 服务 |
+| Microsoft Office COM | 可选，仅 Windows；用于原生 PivotTable、原生 SmartArt、接受修订、PDF 导出、旧格式转换 |
+| LibreOffice | 可选；COM 不可用时用于旧 `.doc/.xls/.ppt` 转换 |
+| OCR | 可选，需要 PyMuPDF、pytesseract 和 Tesseract 可执行文件；`officeforge_doctor` 会报告缺失项 |
 
-## 模块与功能开关
+## 安装
 
-Office Forge 允许按文档族和高级功能做选择，配置写在 DSH profile 的 bundle config 中；所有开关默认开启，不配置时全部能力可用；`resources/features.json` 和 `resources/themes.json` 已外部化。
+### 从发布包安装
 
-```json
-{
-  "modules": { "word": true, "excel": true, "ppt": true, "pdf": true },
-  "features": {
-    "word": { "images": true, "hyperlinks": true, "pageBreaks": true, "toc": true, "captions": true, "styles": true, "fields": true, "comments": true, "revisions": true, "mailMerge": true, "footnotes": true, "bookmarks": true, "crossReferences": true },
-    "excel": { "charts": true, "comboCharts": true, "conditionalFormatting": true, "dataValidation": true, "comments": true, "images": true, "mergedCells": true, "formulas": true, "arrayFormulas": true, "dataTools": true, "audit": true, "pivots": true, "tables": true, "protection": true, "import": true },
-    "ppt": { "charts": true, "images": true, "transitions": true, "shapes": true, "themes": true, "audit": true, "animations": true, "smartart": true, "notes": true, "sections": true }
-  }
-}
+```bash
+dsh plugin --profile <profile> add /path/to/dsh-office-forge-0.14.0.tgz
 ```
 
-- 关闭 `modules.word` / `modules.excel` / `modules.ppt` 会分别移除对应文档类型和工具入口；关闭 `modules.pdf` 会移除 `officeforge_export`。
-- 关闭某个 `features` 项后，引擎收到该能力请求会返回 `FEATURE_DISABLED`，不会静默降级或写入不完整结果。
-- 高级能力：Word 图片/超链接/分页/目录/题注/样式/字段刷新/批注/修订/邮件合并/脚注/书签/交叉引用；Excel 图表/组合图次坐标轴/条件格式/数据验证/批注/图片/合并单元格/公式列/数组公式/排序/去重/空白填充/文本清洗/公式健康审计/透视摘要/CSV/TSV/JSON 导入/原生表格对象/工作表与工作簿保护；PowerPoint 图表/图片/切换/形状/文本框/连接线/主题预设/版面质检/动画/SmartArt 风格图/演讲者备注批量/节（section）。
-- 生成文件写入中性的核心属性：`author`/`lastModifiedBy` 默认 `Office Forge`，`created`/`modified` 使用当前 UTC 时间，`revision` 从 1 开始；任意 create spec 都可传 `properties: {author, title, subject, keywords, comments, category}` 覆盖，docx 同时保留历史顶层 `author` 写法。
-- 可选真实后端：`enableBackends` 默认开启；`officeforge_pdf` 始终可用（包内 pypdf），`officeforge_convert`/`officeforge_preview`/`officeforge_recalculate` 依赖宿主 `officeKit` 或本机 COM/LibreOffice。`officeforge_native` 需要 Windows + Microsoft Office + pywin32；缺后端时返回 `BACKEND_UNAVAILABLE`，不会影响 Native 工具。
+也可以按 DSH 的常规方式把包加入 profile 的 dependencies 与 `dsh.profile.bundles`。插件包声明了 `dsh.bundle.patch`、`dsh.client`、locale 和 icon，可被 DSH 插件页识别。
 
-## 快速示例
+### 从源码构建
 
-创建一个 Word 文档：
+```bash
+git clone https://github.com/siyu0209/dsh-office-forge.git
+cd dsh-office-forge
+npm pack
+```
+
+然后把生成的 `dsh-office-forge-*.tgz` 安装到目标 profile。源码运行需要 Node 和带三个 Office 库的 Python；`officeforge_doctor` 会指出缺少什么。
+
+### 验证安装
+
+重启 DSH 后调用：
+
+```json
+{ "tool": "officeforge_doctor" }
+```
+
+必需组件齐全时返回 `ok: true`。OCR、LibreOffice 等可选后端可能显示 `warn`，不会影响核心文档工具。
+
+## 快速开始
+
+### 创建 Word 文档
 
 ```json
 {
@@ -53,16 +70,17 @@ Office Forge 允许按文档族和高级功能做选择，配置写在 DSH profi
   "type": "docx",
   "spec": {
     "title": "周报",
-    "subtitle": "2026-11-21",
+    "subtitle": "第 47 周",
     "sections": [
-      { "heading": "本周进展", "bullets": ["完成 A 模块", "验证 B 流程"] },
-      { "heading": "下周计划", "numbered": ["修复 C", "上线 D"] }
-    ]
+      { "heading": "进展", "bullets": ["完成模块 A", "验证流程 B"] },
+      { "heading": "下周", "numbered": ["修复 C", "发布 D"] }
+    ],
+    "pageNumbers": true
   }
 }
 ```
 
-创建一个带图表、条件格式和图片的 Excel 工作簿：
+### 创建 Excel 工作簿
 
 ```json
 {
@@ -76,23 +94,42 @@ Office Forge 允许按文档族和高级功能做选择，配置写在 DSH profi
         "rows": [["1月", 120], ["2月", 180], ["3月", 240]],
         "freeze": "A2",
         "autoFilter": true,
-        "charts": [{ "type": "bar", "dataRange": "B1:B4", "categoriesRange": "A2:A4", "anchor": "E2", "title": "收入趋势" }],
-        "conditionalFormatting": [{ "range": "B2:B4", "type": "cellIs", "operator": "greaterThan", "formula": "150", "fill": "FFC7CE" }],
-        "images": [{ "path": "logo.png", "anchor": "G2", "width": 120, "height": 40 }]
+        "charts": [
+          { "type": "bar", "dataRange": "B1:B4", "categoriesRange": "A2:A4", "anchor": "E2", "title": "收入" }
+        ]
       }
     ]
   }
 }
 ```
 
-填充一个带表格循环的 Word 模板：
+### 创建 PowerPoint 演示文稿
+
+```json
+{
+  "path": "decks/quarterly.pptx",
+  "type": "pptx",
+  "spec": {
+    "theme": "swiss",
+    "slides": [
+      { "layout": "cover", "title": "季度回顾", "subtitle": "FY2026" },
+      { "layout": "kpi", "title": "亮点", "items": [
+        { "value": "42%", "label": "增长" },
+        { "value": "18", "label": "新客户" }
+      ] }
+    ]
+  }
+}
+```
+
+### 填充 Word 模板
 
 ```json
 {
   "template": "templates/people.docx",
   "output": "out/people.docx",
   "data": {
-    "title": "人员名单",
+    "title": "团队",
     "people": [
       { "name": "张三", "dept": "研发" },
       { "name": "李四", "dept": "产品" }
@@ -102,17 +139,7 @@ Office Forge 允许按文档族和高级功能做选择，配置写在 DSH profi
 }
 ```
 
-导出 PDF：
-
-```json
-{
-  "path": "reports/weekly.docx",
-  "output": "out/weekly.pdf",
-  "format": "pdf"
-}
-```
-
-审计 Excel 公式健康：
+### 审计工作簿
 
 ```json
 {
@@ -122,157 +149,281 @@ Office Forge 允许按文档族和高级功能做选择，配置写在 DSH profi
 }
 ```
 
-检查 PowerPoint 版面并列出主题：
+### 合并 PDF
 
 ```json
 {
-  "path": "decks/quarterly.pptx",
-  "type": "pptx",
-  "mode": "deck"
+  "operation": "merge",
+  "inputs": ["out/a.pdf", "out/b.pdf"],
+  "output": "out/merged.pdf"
 }
 ```
 
-```json
-{
-  "type": "pptx",
-  "mode": "themes"
-}
-```
+## 工具参考
+
+| 工具 | 作用 |
+|---|---|
+| `officeforge_read` | 读取 `.docx` / `.xlsx` / `.pptx` / `.pdf`，支持 `content`、`outline`、`search` 模式，输出 markdown、text 或 JSON；PDF 支持文本提取与加密密码。 |
+| `officeforge_create` | 用声明式 spec 创建文档。Word 支持章节、标题、项目符号、编号、表格、页眉页脚、页面设置、页码、目录、图片、超链接、题注、样式、批注、修订、邮件合并、脚注、书签、交叉引用、引文、参考文献、分栏、水印、内容控件、`.dotx` 模板。Excel 支持工作表、CSV/TSV/JSON 导入、公式、数组公式、图表（含组合图）、条件格式、数据验证、批注、图片、合并单元格、表格对象、保护。PowerPoint 支持幻灯片、版式、模板、主题、图表、图片、表格、文本框、形状、连接线、切换（含 morph）、动画、SmartArt 风格图、备注、节、批注、媒体、母版。 |
+| `officeforge_edit` | 对现有文档执行有界编辑。Word：替换、追加、图片、目录、题注、样式、字段、批注、修订、邮件合并、脚注、书签、交叉引用、引文、参考文献、分栏、水印、内容控件、模板、核心属性。Excel：单元格、行、工作表、格式、冻结、筛选、图表、条件格式、数据验证、批注、合并、图片、公式列、排序、去重、空白填充、文本清洗、透视摘要、表格对象、保护。PowerPoint：文本、幻灯片、备注、节、切换、形状、文本框、连接线、动画、SmartArt 风格图、批注、媒体、母版、主题、核心属性。 |
+| `officeforge_template` | 用 JSON 或 `.json/.csv/.tsv` 数据填充 Word/Excel 模板：`{{key}}` 占位符和一层 `{{#each items}}...{{/each}}` 循环。 |
+| `officeforge_audit` | 只读审计。Word：`health`（标题跳级、重复/孤立标题、未清除占位符、超长段落、连续空段落）与 `profile`。Excel：`health`（公式错误、模式不一致、硬编码、空行断链、循环引用）、`profile`、`insight`、`diff`。PowerPoint：`deck` 质量、`profile`、`themes`、`layouts`、`templates`。 |
+| `officeforge_doctor` | 只读运行时诊断：Python 与 Office 库、内置 PDF 引擎、COM/pywin32、已注册 Office 应用、LibreOffice、`officeKit`、客户端 bundle、当前 modules/features。每项包含 `required`、`status`、`detail`、`remedy`。 |
+| `officeforge_convert` | 通过 COM/LibreOffice 转换旧 `.doc/.docm/.xls/.xlsm/.ppt/.pptm`；通过宿主 `officeKit` 转换现代格式/PDF。 |
+| `officeforge_pdf` | 文件级 PDF 操作：`merge`、`split`、`rotate`、`watermark`、`pageNumbers`、`formFields`、`fillForm`、`extractImages`、`ocr`、`encrypt`、`decrypt`；使用内置 pypdf。 |
+| `officeforge_native` | 可选 Microsoft Office COM 操作：`convert`、`exportPdf`、`acceptRevisions`、`recalculate`、`pivot`（原生 PivotTable）、`smartArt`（原生 SmartArt）。 |
+| `officeforge_preview` | 通过 `officeKit.renderImages` 把页面、幻灯片或工作表区域渲染为 PNG，不启动 Office UI。 |
+| `officeforge_recalculate` | 通过 `officeKit.recalculate` 重算公式并保存刷新后的工作簿。 |
+| `officeforge_batch` | 在一次 Python 调用中执行最多 20 个独立的 create/edit/template 任务；每项独立成功或失败；禁止嵌套 batch。 |
+| `officeforge_export` | 通过 `officeKit` 转换为 PDF 或其他支持格式；可选择把结果复制回工作区。 |
 
 ## 配置
 
-插件配置通过 DSH profile 的 bundle config 覆盖，均有默认值：
+所有字段都可选，所有模块与功能默认 `true`；空配置即启用完整能力。
 
 | 字段 | 默认值 | 说明 |
 |---|---|---|
-| `pythonPath` | 自动发现 | 可选，指定已安装 `python-docx`、`openpyxl`、`python-pptx` 的 Python 可执行文件。 |
-| `engineTimeoutMs` | `120000` | 单次 Python 引擎调用的超时（毫秒）。 |
-| `maxBatchItems` | `20` | 单次 `officeforge_batch` 的最大任务数。 |
+| `pythonPath` | 自动探测 | 带 `python-docx`、`openpyxl`、`python-pptx` 的 Python 可执行文件。 |
+| `engineTimeoutMs` | `120000` | 单次 Python 引擎调用超时（毫秒）。 |
+| `maxBatchItems` | `20` | 单次 `officeforge_batch` 的最大条目数。 |
 | `enableExport` | `true` | 是否注册 `officeforge_export`。 |
 | `enableBatch` | `true` | 是否注册 `officeforge_batch`。 |
-| `enableBackends` | `true` | 是否注册 `officeforge_convert` / `officeforge_preview` / `officeforge_recalculate`；缺少后端时这些工具会显式报错。 |
-| `modules` | 全部 `true` | `word` / `excel` / `ppt` / `pdf` 四个文档族开关。 |
-| `features` | 全部 `true` | Word / Excel / PowerPoint 的细粒度高级能力开关。 |
+| `enableBackends` | `true` | 是否注册 `officeforge_convert` / `officeforge_preview` / `officeforge_recalculate`；缺少后端时显式报错。 |
+| `modules` | 全部 `true` | `word` / `excel` / `ppt` / `pdf` 文档族开关。 |
+| `features` | 全部 `true` | Word / Excel / PowerPoint 细粒度能力开关。 |
 
-安装到 profile 时，可在对应的 `cordis.patch.yml` entry 里覆盖配置，例如只启用 Word 和 Excel、关闭 Excel 图表：
+profile 配置示例：
 
 ```yaml
 - insert:
     - id: dsh-office-forge
       name: dsh-office-forge
       config:
-        modules: { word: true, excel: true, ppt: false, pdf: true }
+        modules: { word: true, excel: true, ppt: true, pdf: true }
         features:
-          excel: { charts: false, dataTools: true }
+          word: { images: true, toc: true, comments: true }
+          excel: { charts: true, audit: true, import: true }
+          ppt: { themes: true, audit: true, layouts: true }
 ```
 
-Python 自动发现顺序：`pythonPath` → `OFFICEFORGE_PYTHON` → `DSH_PYTHON` → `$DSH_HOME/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe` → 扫描 `$DSH_HOME/dsh-runtimes/*/dependencies/python` → `PATH`。当前机器的捆绑 Python 3.12.14 已带全部所需包。
+完整功能名见 `resources/features.json`，主题预设见 `resources/themes.json`。
 
-## 边界与安全设计
+### Python 发现顺序
 
-- **只写工作目录**：所有输入和输出路径都经过 `ctx.fs.resolve`、`ctx.fs.contains` 和词法相对路径双重检查，越界返回 `PATH_OUTSIDE_WORKSPACE`。
-- **原子写入**：所有新文件先写同目录临时文件，再用 `os.replace` 原子替换；已存在文件默认拒绝，必须显式 `overwrite`。
-- **有界执行**：单文件输入上限 50 MiB，输出上限 100 MiB，文本最多 200,000 字符，Excel 最多 5,000 行 × 300 列，PPT 最多 300 页，批次最多 20 项。
-- **无递归**：每个工具只调用 Python 引擎的单一 action；工具之间不互相调用，`officeforge_batch` 禁止 `action: "batch"`，不存在自调用链。
-- **不碰破甲**：插件不注册 prompt 变量、不接管 LLM stream、不注册 tool middleware / hook，不会改变 `@adwmc/helm-d` 的 hcot、attack-scheduler、advisory 等行为。
-- **不覆盖内置工具**：所有工具名以 `officeforge_` 开头，不与内置 `office_render/office_convert/office_recalculate` 重名。
-- **单工具隔离**：`apply` 内逐个注册，某个工具注册失败只记录 warning，不会让整个插件或 profile 激活失败。
-- **兼容性加固（v0.6.1）**：`officeforge_export` 使用根会话作为 `officeKit` 输出 owner，转换前后校验源文件版本，并在远程 workspace 上拒绝不可映射的 `officeKit` 路径；非法 profile 配置会回退默认值而不是阻断插件激活；Excel 图表数据使用唯一的隐藏工作表，不复用或覆盖用户已有工作表。
-- **插件页状态卡与环境检查（v0.14.0）**：`lib/client.js` 只注册 `plugins.detail.section` 一个只读卡片，显示版本、工具清单与“检查环境”按钮；按钮调用只读 `GET /officeforge/doctor`，渲染 health/summary 与逐项 checks/remedy，不读写配置、不发起文档操作、不注册其他 slot。
+1. 配置项 `pythonPath`
+2. 环境变量 `OFFICEFORGE_PYTHON`
+3. 环境变量 `DSH_PYTHON`
+4. `$DSH_HOME/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe`
+5. `$DSH_HOME/dsh-runtimes/*/dependencies/python`
+6. `PATH` 上的 `python3` / `python`
 
-## 兼容性与隔离（v0.14.0）
-
-- 只注入 `tools`、`fs`、`workingDirectory` 三个宿主服务；不注册 `systemPrompt`、不接管 LLM stream、不注册 middleware/hook，`@adwmc/helm-d` 的 hcot、attack-scheduler、advisory 不受影响。
-- 客户端 bundle 只注入 `slots`，只注册 `plugins.detail.section`（id `officeforge.status`，order 40）；不注册 `plugins.bundle.config`、不修改任何配置项，插件页开关与工具注册保持一致。
-- 十三个工具名全部以 `officeforge_` 开头；与内置 `office_render` / `office_convert` / `office_recalculate`、`run_code` 以及常见 `word_*` / `excel_*` / `ppt_*` / `univer_*` 工具不重名。
-- `tests/test_compatibility.mjs` 用真实 `assertSupportedJsonSchema` 校验十三个输出 schema，并验证模块全关时注册 0 工具、仅启用 Word 时类型枚举收窄、不会覆盖宿主已有工具。
-- 所有文档操作在短生命周期 Python 子进程中完成；不修改进程环境、不写全局配置、不启动 DSH、不写入任何 profile。
-- 单工具注册失败只记录 warning；配置解析失败回退默认值；批处理逐项隔离错误。多个插件同时安装时仍应避免并发写同一文件，Office Forge 不提供跨插件文件锁。
-
-## 目录
+## 架构
 
 ```
-office-forge/
-  package.json           # DSH bundle 与 npm 包元数据
-  cordis.patch.yml       # 向 profile 插入 dsh-office-forge
-  icon.svg
-  locale/
-    zh.json              # { "meta": { "title", "description" } }
-    en.json
-  resources/
-    themes.json          # 31 套可外部化主题（24 套来自 dsh-ppt + 7 套旧主题）
-    features.json        # 模块/功能注册表
-  lib/
-    index.js             # DSH 工具注册、路径策略、Python 调度、officeKit 导出/预览/重算
-    client.js            # 插件页只读状态卡 + 一键环境检查（plugins.detail.section）
-    office_engine.py     # JSON stdin/stdout 引擎入口
-    office_common.py     # 路径、原子写、占位符、数据文件、通用校验
-    office_pdf.py        # PDF 文本提取（内置 vendor pypdf/fitz/pdfplumber/fallback）
-    office_pdf_tools.py  # PDF 合并/拆分/旋转/水印
-    office_backends.py   # 可选 COM / LibreOffice 旧格式转换、PDF 导出
-    office_com_worker.py # 独立 pywin32 COM Worker（Word/Excel/PowerPoint）
-    office_migrations.py # spec schema 迁移
-    vendor/pypdf/        # 包内 PDF 读取/写入依赖
-    office_docx.py       # Word 读/写/编辑/模板
-    office_xlsx.py       # Excel 读/写/编辑/模板
-    office_pptx.py       # PowerPoint 读/写/编辑/模板
-  benchmarks/
-    run_benchmarks.py   # performance/robustness baseline (12 real engine cases)
-    baseline.json       # per-case maxSeconds / maxPeakMB thresholds
-  tests/
-    test_engine.py       # Python 引擎端到端测试（临时工作区）
-    test_fuzz.py         # 畸形输入/路径逃逸鲁棒性测试
-    test_com_cleanup.py  # COM 进程回收验证（需要 Office + pywin32）
-    run_regression.py    # 一次跑完全部套件并对照回归基线
-    regression_baseline.json # 各套件断言下限
-    test_plugin.mjs      # Node 插件层 mock host 测试
-    test_plugin_config.mjs # 模块/功能开关测试
-    test_compatibility.mjs # 宿主契约、工具名冲突与隔离检查
-    test_client.mjs      # 客户端 bundle 形态与 slot 注册
-    test_client_host.mjs # 用真实 dsh-client-modules 驱动 client bundle
-    test_dsh_profile.mjs # 隔离 DSH_HOME 中的一次性安装验证
-  docs/
-    BENCHMARKS.md        # performance and robustness baseline
-    DESIGN.md            # 调研来源、架构、非递归约束与兼容性说明
-    COMPATIBILITY.md     # v0.14.0 宿主契约、工具命名空间与隔离审查
-    COMPATIBILITY-MATRIX.md # 插件能力/格式/后端兼容矩阵
-    CHANGELOG.md         # 版本变更与迁移记录
-    RESEARCH-v0.4.md     # v0.4 候选插件调研：吸收公式体检、PPT 主题与质检；不引入 COM/exceljs/LibreOffice
-  README.md
-  README.zh.md
-  LICENSE
+DSH 宿主
+  └─ lib/index.js                 Node 宿主层
+       ├─ Config schema           modules + features + 运行时选项
+       ├─ 路径策略                ctx.fs.resolve / contains / processPath
+       ├─ runEngine()             短生命周期 Python 子进程
+       │    └─ lib/office_engine.py
+       │         ├─ office_common.py      路径、原子写、占位符、feature gate
+       │         ├─ office_docx.py        Word 读取/创建/编辑/模板/审计
+       │         ├─ office_xlsx.py        Excel 读取/创建/编辑/模板/审计
+       │         ├─ office_pptx.py        PowerPoint 读取/创建/编辑/模板/审计
+       │         ├─ office_pdf.py         PDF 文本提取
+       │         ├─ office_pdf_tools.py   PDF 合并/拆分/旋转/水印/表单/图片/OCR/加密
+       │         ├─ office_backends.py    可选 COM / LibreOffice 后端
+       │         ├─ office_com_worker.py  隔离的 COM Worker
+       │         └─ office_migrations.py  spec schema 迁移
+       ├─ officeKit 桥接          export / preview / recalculate
+       └─ lib/client.js           插件页只读状态卡 + 环境检查
 ```
 
-## 本地验证
+Node 层只做四件事：配置裁剪、工作区路径策略、参数校验、子进程生命周期。所有文档解析与生成都在 Python 中完成；Python 引擎每次调用都是无状态的，每个工具只分发一个 action。
 
-在 `office-forge/` 目录下：
+## 安全与隔离
+
+- **只写工作区**：每个输入/输出路径同时经过宿主 `ctx.fs.resolve` / `ctx.fs.contains` 和词法 `PATH_OUTSIDE_WORKSPACE` 检查。
+- **原子写入**：新文件写入同目录临时文件后 `os.replace`；默认拒绝覆盖，`overwrite: true` 才替换；可选生成同目录备份。
+- **有界执行**：输入 50 MiB、输出 100 MiB、文本 200,000 字符、Excel 单表 5,000×300、PPT 300 页、batch 20 项。
+- **无递归**：工具之间不调用；每个工具只向引擎发送一个 action；模板只展开一层循环；禁止嵌套 batch；表格文本替换使用显式 stack。
+- **不注册宿主钩子**：只注入 `tools`、`fs`、`workingDirectory`；不注册 `systemPrompt`、LLM stream hook、tool middleware 或宿主 hook。
+- **不冲突工具名**：所有工具都以 `officeforge_` 开头；内置 `office_*` 与 `run_code` 不受影响。
+- **单工具隔离**：逐个注册；单个工具因宿主版本差异失败只记录 warning，不会中断插件或 profile 激活。
+- **无损 JSON**：所有工具结果会归一化，缺省可选字段不会以 `undefined` 泄漏，避免宿主报 `value is not lossless JSON`。
+- **插件页只读**：客户端 bundle 只注册 `plugins.detail.section` 只读状态卡，不写配置、不执行文档操作。
+
+## 错误模型
+
+所有失败都返回带 `code`、`message` 和可选 `detail` 的稳定 JSON 错误对象。常见错误码：
+
+| 错误码 | 含义 |
+|---|---|
+| `INPUT_NOT_FOUND` | 源文件不存在或不在工作区。 |
+| `PATH_OUTSIDE_WORKSPACE` | 路径越出允许的工作区。 |
+| `UNSUPPORTED_FORMAT` | 文件扩展名不能被请求的工具处理。 |
+| `OUTPUT_EXISTS` | 目标已存在且未请求 `overwrite`。 |
+| `FEATURE_DISABLED` | 请求的能力在 `features` 中被关闭。 |
+| `BACKEND_UNAVAILABLE` | 可选 COM/LibreOffice/OCR 后端未安装或未检测到。 |
+| `SCHEMA_VERSION_UNSUPPORTED` | Spec 的 schema 版本高于引擎支持范围。 |
+| `INVALID_PDF` / `PDF_PASSWORD_REQUIRED` / `PDF_PASSWORD_INVALID` | PDF 损坏、需要密码或密码错误。 |
+| `ENGINE_BAD_OUTPUT` | Python 引擎返回无法无损序列化的值。 |
+
+## 测试与性能基线
+
+仓库包含十套测试和一个基准套件。全部使用临时目录和 mock 宿主，不启动 DSH，也不写 profile。
+
+| 套件 | 用途 |
+|---|---|
+| `tests/test_engine.py` | Python 引擎端到端：全格式、模板、审计、PDF、native、batch、copy。 |
+| `tests/test_fuzz.py` | 畸形 JSON、路径逃逸、未知 action、嵌套 batch、稳定错误码。 |
+| `tests/test_com_cleanup.py` | 可选 COM 进程回收测试；无 Office/pywin32 时跳过。 |
+| `tests/test_plugin.mjs` | Node 插件层，使用 mock 宿主和 mock `officeKit`。 |
+| `tests/test_plugin_config.mjs` | modules/features 归一化与类型裁剪。 |
+| `tests/test_compatibility.mjs` | 真实宿主 schema 校验、工具名冲突、隔离静态检查。 |
+| `tests/test_client.mjs` | 客户端 bundle manifest、lazy-CJS 形态、slot 注册。 |
+| `tests/test_client_host.mjs` | 用真实 `dsh-client-modules` 驱动客户端 bundle。 |
+| `tests/test_dsh_profile.mjs` | 隔离 `DSH_HOME` 的一次性安装验证。 |
+| `tests/run_regression.py` | 按 `tests/regression_baseline.json` 运行全部套件；`--quick` 跳过可选套件。 |
+| `benchmarks/run_benchmarks.py` | 12 个性能与鲁棒性基准；阈值在 `benchmarks/baseline.json`。 |
+
+### 本地验证
+
+把 `PYTHON` 指向带 `python-docx`、`openpyxl`、`python-pptx` 的 Python 3.12。如果使用 DSH 捆绑运行时：
 
 ```bash
-# 一次跑完全部套件（断言下限 + 完成标记双重校验）
-"C:/Users/zhoutao/DSH 官方 0.2.2/app/profile/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe" tests/run_regression.py
+export DSH_HOME="${DSH_HOME:-$HOME/.dsh}"
+export PYTHON="$DSH_HOME/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe"
+```
 
-# 跳过需要 Office 与 DSH CLI 的两套
-"C:/Users/zhoutao/DSH 官方 0.2.2/app/profile/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe" tests/run_regression.py --quick
+Windows PowerShell：
 
-# 单独运行
-"C:/Users/zhoutao/DSH 官方 0.2.2/app/profile/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe" tests/test_engine.py
-"C:/Users/zhoutao/DSH 官方 0.2.2/app/profile/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe" tests/test_fuzz.py
-"C:/Users/zhoutao/DSH 官方 0.2.2/app/profile/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe" tests/test_com_cleanup.py
+```powershell
+$env:DSH_HOME = "$env:USERPROFILE\.dsh"
+$env:PYTHON = "$env:DSH_HOME\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe"
+```
+
+运行全部：
+
+```bash
+"$PYTHON" tests/run_regression.py
+"$PYTHON" tests/run_regression.py --quick
+```
+
+单独运行：
+
+```bash
+"$PYTHON" tests/test_engine.py
+"$PYTHON" tests/test_fuzz.py
+"$PYTHON" tests/test_com_cleanup.py
 node tests/test_plugin.mjs
 node tests/test_plugin_config.mjs
 node tests/test_compatibility.mjs
 node tests/test_client.mjs
 node tests/test_client_host.mjs
-"C:/Users/zhoutao/DSH 官方 0.2.2/app/profile/dsh-runtimes/dsh-primary-runtime/dependencies/python/python.exe" benchmarks/run_benchmarks.py
+"$PYTHON" benchmarks/run_benchmarks.py
 node tests/test_dsh_profile.mjs
 ```
 
-十套测试（含 benchmark 套件）都只使用临时目录和 mock host，不会启动 DSH，也不会写入任何 profile。`test_dsh_profile.mjs` 会在系统临时目录建一个一次性 `DSH_HOME`，安装本地 tarball 到临时 profile 后立即删除，用于验证真实安装路径。`test_com_cleanup.py` 会真实调用本机 Office 导出 PDF，并比对导出前后的 `WINWORD/EXCEL/POWERPNT` 进程数，确保 COM 后端不留孤儿进程；没有 Office 或 pywin32 时该用例自动 SKIP。
+`tests/test_client_host.mjs` 和 `tests/test_dsh_profile.mjs` 需要 DSH 安装；用 `DSH_APP_ROOT` 指向包含 `node_modules/@deepseek-ai/dsh` 的目录。找不到时会跳过。
 
-## 安装
+## 兼容性与限制
 
-把打包后的 tarball（或本目录）作为本地 bundle 加入目标 profile 并启用 `dsh-office-forge`。本机构建环境已在 desktop profile 中安装该插件，可用 `officeforge_doctor` 查看实际生效配置。
+- **DSH**：在 `0.2.2-rc.5` 上测试；`package.json` 声明 `engines.dsh >= 0.2.2-rc.5`。
+- **Node**：Node 20+；DSH 宿主当前使用 Node 26。
+- **Python**：CPython 3.12.14；`python-docx 1.2.0`、`openpyxl 3.1.5`、`python-pptx 1.0.2`。
+- **Office COM**：仅 Windows + Microsoft Office + pywin32；不可用时 `officeforge_native` 返回 `BACKEND_UNAVAILABLE`，核心文件级工具仍可用。
+- **LibreOffice**：可选，仅用于缺少 COM 时的旧格式转换。
+- **OCR**：可选；需要 PyMuPDF、pytesseract、Tesseract 可执行文件和语言包。
+- **预览**：使用宿主 `officeKit.renderImages`；像素尺寸和字体取决于宿主与已安装字体。
+- **原生功能**：原生 PivotTable/PivotChart/Slicer 与原生 SmartArt 需要 COM；纯文件路径提供透视汇总和 SmartArt 风格的可编辑形状，不是完整原生对象。
+- **Word 水印**：VML 水印在 Word 中可见；部分 LibreOffice 预览可能不显示。
+- **宏**：不执行宏；在 openpyxl 支持范围内编辑 `.xlsm` 时保留 VBA 容器。
 
-## License
+## 故障排查
 
-MIT
+| 现象 | 检查 |
+|---|---|
+| `officeforge_doctor` 显示 `BACKEND_UNAVAILABLE` | 可选后端未安装；核心工具仍可使用。 |
+| 相对路径报 `INPUT_NOT_FOUND` | 路径按会话工作区解析；请使用工作区内路径。 |
+| `PATH_OUTSIDE_WORKSPACE` | 目标路径越出工作区；写入工作区内或使用允许的宿主路径。 |
+| `FEATURE_DISABLED` | 对应功能在 `features` 中关闭；在 bundle 配置中启用。 |
+| `value is not lossless JSON` | 工具返回了缺省可选字段；升级到使用 `lossless()` 归一化结果的版本。 |
+| Python import 错误 | 运行 `officeforge_doctor`；把 `pythonPath` 或 `OFFICEFORGE_PYTHON` 指向带 `python-docx`、`openpyxl`、`python-pptx` 的 Python。 |
+| COM 输出失败 | 确认 Windows Office、pywin32 可用，且没有受保护视图弹窗阻止文件。 |
+
+## 仓库结构
+
+```
+office-forge/
+  package.json                 # DSH bundle 与 npm 元数据
+  cordis.patch.yml             # 把 dsh-office-forge 插入 profile
+  icon.svg
+  locale/
+    zh.json
+    en.json
+  resources/
+    themes.json                # 31 套内置主题
+    features.json              # 模块/功能注册表
+    layouts.json               # 38 个 PowerPoint 版式
+    templates.json             # 10 套 deck 模板
+  lib/
+    index.js                   # 工具注册、路径策略、Python 传输、officeKit 桥接
+    client.js                  # 只读插件页状态卡与环境检查
+    office_engine.py           # JSON stdin/stdout 引擎入口
+    office_common.py           # 路径、原子写、占位符、校验
+    office_pdf.py              # PDF 文本提取
+    office_pdf_tools.py        # PDF 文件操作
+    office_backends.py         # 可选 COM / LibreOffice 后端
+    office_com_worker.py       # 隔离 COM Worker
+    office_migrations.py       # spec schema 迁移
+    office_docx.py             # Word
+    office_xlsx.py             # Excel
+    office_pptx.py             # PowerPoint
+    vendor/pypdf/              # 内置 pypdf
+  benchmarks/
+    run_benchmarks.py
+    baseline.json
+  tests/
+    test_engine.py
+    test_fuzz.py
+    test_com_cleanup.py
+    test_plugin.mjs
+    test_plugin_config.mjs
+    test_compatibility.mjs
+    test_client.mjs
+    test_client_host.mjs
+    test_dsh_profile.mjs
+    run_regression.py
+    regression_baseline.json
+  docs/
+    DESIGN.md
+    COMPATIBILITY.md
+    COMPATIBILITY-MATRIX.md
+    COVERAGE.md
+    CHANGELOG.md
+    BENCHMARKS.md
+  README.md
+  README.zh.md
+  LICENSE
+```
+
+## 开发
+
+插件是纯 ESM + Python 3.12，没有构建步骤。
+
+```bash
+git clone https://github.com/siyu0209/dsh-office-forge.git
+cd dsh-office-forge
+npm install --ignore-scripts
+```
+
+提交 PR 前请运行上表的验证命令。功能变更要同步 `tests/test_engine.py`，只有确认新的断言下限合理时才更新 `tests/regression_baseline.json`。
+
+## 版本策略
+
+语义化版本：patch 修复 bug 与兼容性；minor 增加能力；major 可能改变文档 spec 语义。每次发布记录在 `docs/CHANGELOG.md`，包含迁移规则。
+
+## 许可证
+
+MIT，见 [LICENSE](LICENSE)。
