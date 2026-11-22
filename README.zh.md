@@ -2,6 +2,11 @@
 
 **面向 DeepSeek Harness（DSH）的 Office 文档自动化工具箱。**
 
+[![npm](https://img.shields.io/npm/v/dsh-office-forge.svg)](https://www.npmjs.com/package/dsh-office-forge)
+[![GitHub release](https://img.shields.io/github/v/release/siyu0209/dsh-office-forge.svg)](https://github.com/siyu0209/dsh-office-forge/releases/latest)
+
+**安装：** `dsh plugin --profile <profile> add dsh-office-forge` · [npm](https://www.npmjs.com/package/dsh-office-forge) · [GitHub Release](https://github.com/siyu0209/dsh-office-forge/releases/latest)
+
 Office Forge 是一个自包含的 DSH 插件包，为 Agent 提供十三个互相独立的工具，用来处理 Word、Excel、PowerPoint 和 PDF 文件。它可以读取、创建、编辑、审计、预览、转换、批量处理和填充模板，不需要启动 Office 界面。所有文档处理都在短生命周期的 Python 子进程中完成；Node 层只负责工作区授权、参数校验、子进程传输和可选的宿主集成。
 
 插件为独立实现，不捆绑任何第三方 Office 运行时，也不依赖其他文档插件。
@@ -32,7 +37,29 @@ Office Forge 是一个自包含的 DSH 插件包，为 Agent 提供十三个互�
 
 ## 安装
 
-### 从发布包安装
+### 从 npm 安装
+
+包已发布在 <https://www.npmjs.com/package/dsh-office-forge>。
+
+```bash
+# 安装到 DSH profile
+dsh plugin --profile <profile> add dsh-office-forge
+
+# 固定版本
+dsh plugin --profile <profile> add dsh-office-forge@0.14.0
+```
+
+### 从 GitHub Releases 安装
+
+```bash
+dsh plugin --profile <profile> add https://github.com/siyu0209/dsh-office-forge/releases/download/v0.14.0/dsh-office-forge-0.14.0.tgz
+```
+
+### 从 DSH 插件页安装
+
+打开 **插件 → 安装**，输入 `dsh-office-forge`，或把 Release 里的 `.tgz` 拖进安装器，然后重启 DSH。桌面版 `desktop` profile 由 Electron 管理，请通过插件页安装该 profile。
+
+### 从本地 tarball 安装
 
 ```bash
 dsh plugin --profile <profile> add /path/to/dsh-office-forge-0.14.0.tgz

@@ -2,6 +2,11 @@
 
 **Office document automation for DeepSeek Harness (DSH).**
 
+[![npm](https://img.shields.io/npm/v/dsh-office-forge.svg)](https://www.npmjs.com/package/dsh-office-forge)
+[![GitHub release](https://img.shields.io/github/v/release/siyu0209/dsh-office-forge.svg)](https://github.com/siyu0209/dsh-office-forge/releases/latest)
+
+**Install:** `dsh plugin --profile <profile> add dsh-office-forge` · [npm](https://www.npmjs.com/package/dsh-office-forge) · [GitHub Release](https://github.com/siyu0209/dsh-office-forge/releases/latest)
+
 Office Forge is a self-contained DSH bundle that gives an agent thirteen independent tools for working with Word, Excel, PowerPoint, and PDF files. It reads, creates, edits, audits, previews, converts, batch-processes, and templates documents without launching an Office UI. All document work runs in short-lived Python subprocesses; the Node layer only handles workspace authorization, argument validation, subprocess transport, and optional host integration.
 
 The plugin is an independent implementation. It bundles no third-party office runtime and does not depend on any other document plugin.
@@ -32,7 +37,29 @@ The plugin is an independent implementation. It bundles no third-party office ru
 
 ## Installation
 
-### From a release tarball
+### From npm
+
+The package is published at <https://www.npmjs.com/package/dsh-office-forge>.
+
+```bash
+# Install into a DSH profile
+dsh plugin --profile <profile> add dsh-office-forge
+
+# Pin a specific version
+dsh plugin --profile <profile> add dsh-office-forge@0.14.0
+```
+
+### From GitHub Releases
+
+```bash
+dsh plugin --profile <profile> add https://github.com/siyu0209/dsh-office-forge/releases/download/v0.14.0/dsh-office-forge-0.14.0.tgz
+```
+
+### From the DSH plugin page
+
+Open **Plugins → Install**, enter `dsh-office-forge`, or drop the release `.tgz` into the installer, then restart DSH. The desktop `desktop` profile is managed by the Electron app; use the plugin page for that profile.
+
+### From a local tarball
 
 ```bash
 dsh plugin --profile <profile> add /path/to/dsh-office-forge-0.14.0.tgz
