@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 1,
+  "templates": [
+    {
+      "id": "board",
+      "label": "董事会汇报",
+      "theme": "forge",
+      "slides": [
+        {
+          "layout": "cover",
+          "title": "董事会汇报",
+          "subtitle": "年度经营与战略重点"
+        },
+        {
+          "layout": "agenda",
+          "title": "议程",
+          "subtitle": "01 经营概览\n02 关键指标\n03 下一步"
+        },
+        {
+          "layout": "kpi",
+          "title": "关键指标",
+          "subtitle": null
+        },
+        {
+          "layout": "chart",
+          "title": "数据趋势",
+          "subtitle": null
+        },
+        {
+          "layout": "closing",
+          "title": "讨论与决策",
+          "subtitle": null
+        }
+      ]
+    },
+    {
+      "id": "project",
+      "label": "项目复盘",
+      "theme": "ocean",
+      "slides": [
+        {
+          "layout": "cover",
+          "title": "项目复盘",
+          "subtitle": "交付结果与经验沉淀"
+        },
+        {
+          "layout": "timeline",
+          "title": "项目里程碑",
+          "subtitle": null
+        },
+        {
+          "layout": "process",
+          "title": "执行流程",
+          "subtitle": null
+        },
+        {
+          "layout": "table",
+          "title": "结果数据",
+          "subtitle": null
+        },
+        {
+          "layout": "closing",
+          "title": "下一步",
+          "subtitle": null
+        }
+      ]
+    },
+    {
+      "id": "pitch",
+      "label": "融资路演",
+      "theme": "sunset",
+      "slides": [
+        {
+          "layout": "cover",
+          "title": "融资路演",
+          "subtitle": "让复杂的事变得简单"
+        },
+        {
+          "layout": "statement",
+          "title": "市场痛点",
+          "subtitle": null
+        },
+        {
+          "layout": "kpi",
+          "title": "核心数据",
+          "subtitle": null
+        },
+        {
+          "layout": "comparison",
+          "title": "竞争对比",
+          "subtitle": null
+        },
+        {
+          "layout": "closing",
+          "title": "融资计划",
+          "subtitle": null
+        }
+      ]
+    },
+    {
+      "id": "academic",
+      "label": "学术报告",
+      "theme": "academic",
+      "slides": [
+        {
+          "layout": "cover",
+          "title": "学术报告",
+          "subtitle": "研究问题、方法与发现"
+        },
+        {
+          "layout": "bullets",
+          "title": "研究背景",
+          "subtitle": null
+        },
+        {
+          "layout": "chart",
+          "title": "实验结果",
+          "subtitle": null
+        },
+        {
+          "layout": "table",
+          "title": "数据汇总",
+          "subtitle": null
+        },
+        {
+          "layout": "closing",
+          "title": "结论与展望",
+          "subtitle": null
+        }
+      ]
+    },
+    {
+      "id": "training",
+      "label": "培训课程",
+      "theme": "forest",
+      "slides": [
+        {
+          "layout": "cover",
+          "title": "培训课程",
+          "subtitle": "从入门到实践"
+        },
+        {
+          "layout": "agenda",
+          "title": "课程议程",
+          "subtitle": null
+        },
+        {
+          "layout": "bullets-two-column",
+          "title": "核心概念",
+          "subtitle": null
+        },
+        {
+          "layout": "cards",
+          "title": "案例练习",
+          "subtitle": null
+        },
+        {
+          "layout": "closing",
+          "title": "总结与答疑",
+          "subtitle": null
+        }
+      ]
+    },
+    {
+      "id": "sales",
+      "label": "销售方案",
+      "theme": "crimson",
+      "slides": [
+        {
+          "layout": "cover",
+          "title": "销售方案",
+          "subtitle": "客户价值与实施计划"
+        },
+        {
+          "layout": "stats",
+          "title": "客户收益",
+          "subtitle": null
+        },
+        {
+          "layout": "comparison",
+          "title": "方案对比",
+          "subtitle": null
+        },
+        {
+          "layout": "chart",
+          "title": "预期回报",
+          "subtitle": null
+        },
+        {
+          "layout": "closing",
+          "title": "下一步行动",
+          "subtitle": null
+        }
+      ]
+    },
+    {
+      "id": "report",
+      "label": "季度报告",
+      "theme": "minimal",
+      "slides": [
+        {
+          "layout": "cover",
+          "title": "季度报告",
+          "subtitle": "业务进展与问题"
+        },
+        {
+          "layout": "bullets",
+          "title": "本季概览",
+          "subtitle": null
+        },
+        {
+          "layout": "table",
+          "title": "关键数据",
+          "subtitle": null
+        },
+        {
+          "layout": "chart",
+          "title": "趋势分析",
+          "subtitle": null
+        },
+        {
+          "layout": "closing",
+          "title": "下季计划",
+          "subtitle": null
+        }
+      ]
+    },
+    {
+      "id": "product",
+      "label": "产品发布",
+      "theme": "midnight",
+      "slides": [
+        {
+          "layout": "cover",
+          "title": "产品发布",
+          "subtitle": "新能力与新体验"
+        },
+        {
+          "layout": "image-right",
+          "title": "产品亮点",
+          "subtitle": null
+        },
+        {
+          "layout": "cards",
+          "title": "核心功能",
+          "subtitle": null
+        },
+        {
+          "layout": "timeline",
+          "title": "发布节奏",
+          "subtitle": null
+        },
+        {
+          "layout": "closing",
+          "title": "立即体验",
+          "subtitle": null
+        }
+      ]
+    },
+    {
+      "id": "strategy",
+      "label": "战略规划",
+      "theme": "swiss",
+      "slides": [
+        {
+          "layout": "cover",
+          "title": "战略规划",
+          "subtitle": "方向、路径与资源"
+        },
+        {
+          "layout": "matrix",
+          "title": "战略矩阵",
+          "subtitle": null
+        },
+        {
+          "layout": "roadmap",
+          "title": "三年路线",
+          "subtitle": null
+        },
+        {
+          "layout": "funnel",
+          "title": "优先级",
+          "subtitle": null
+        },
+        {
+          "layout": "closing",
+          "title": "组织保障",
+          "subtitle": null
+        }
+      ]
+    },
+    {
+      "id": "minimal",
+      "label": "极简汇报",
+      "theme": "minimal",
+      "slides": [
+        {
+          "layout": "cover",
+          "title": "极简汇报",
+          "subtitle": "一页一个观点"
+        },
+        {
+          "layout": "statement",
+          "title": "核心结论",
+          "subtitle": null
+        },
+        {
+          "layout": "bullets",
+          "title": "支撑要点",
+          "subtitle": null
+        },
+        {
+          "layout": "closing",
+          "title": "结束",
+          "subtitle": null
+        }
+      ]
+    }
+  ]
+}

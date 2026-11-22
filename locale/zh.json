@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Office Forge 文档锻造台",
+    "description": "面向 Word / Excel / PowerPoint / PDF 的本地文档工具集：读取、创建、编辑、模板填充、审计、批量任务、PDF 解析与页码/表单/图片/OCR/加密解密、旧格式转换、视觉预览、公式重算与 PDF 导出，支持 Word 脚注/书签/交叉引用/引文/参考文献/分栏/水印/内容控件/.dotx 模板、Excel CSV/TSV/JSON 导入/数组公式/组合图次坐标轴/原生表格对象与工作表保护、PowerPoint 备注批量/节/38 个版式库/10 套模板/批注/音视频/母版/morph，并可按 Word/Excel/PPT/PDF 模块和高级功能开关裁剪，并可从 resources/ 外部加载主题与功能清单。启用后模型可调用 officeforge_read / officeforge_create / officeforge_edit / officeforge_template / officeforge_audit / officeforge_doctor / officeforge_batch / officeforge_export / officeforge_convert / officeforge_pdf / officeforge_native / officeforge_preview / officeforge_recalculate 十三个工具；文件操作限定在工作目录内，输出采用原子写入并可选自动备份，文档逻辑由短生命周期 Python 子进程执行。关闭插件后这些工具即消失，不会改动现有 Office 工具或破甲插件。"
+  }
+}

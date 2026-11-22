@@ -1,0 +1,70 @@
+{
+  "name": "dsh-office-forge",
+  "version": "0.14.0",
+  "description": "Office document toolkit for DSH with Word citations/columns/watermarks/content controls, Excel native features, PowerPoint layout/template libraries with comments, media, master and morph, full file-level PDF tools, optional OCR diagnostics, and a one-click plugin-page environment check.",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "icon": "./icon.svg",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "files": [
+    "lib/*.js",
+    "lib/*.py",
+    "lib/vendor/**",
+    "locale/*.json",
+    "cordis.patch.yml",
+    "icon.svg",
+    "docs/*.md",
+    "benchmarks/*.py",
+    "benchmarks/baseline.json",
+    "README.md",
+    "README.zh.md",
+    "LICENSE",
+    "resources/*.json"
+  ],
+  "dependencies": {
+    "@deepseek-ai/schemastery": "~3.19.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.5"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-tools": {
+      "optional": false
+    }
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "office",
+    "docx",
+    "xlsx",
+    "pptx",
+    "template",
+    "automation"
+  ],
+  "engines": {
+    "node": ">=20",
+    "dsh": ">=0.2.2-rc.5"
+  },
+  "author": "Office Forge Contributors",
+  "publishConfig": {
+    "access": "public"
+  }
+}

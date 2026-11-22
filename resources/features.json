@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "modules": [
+    "word",
+    "excel",
+    "ppt",
+    "pdf"
+  ],
+  "features": {
+    "word": [
+      "images",
+      "hyperlinks",
+      "pageBreaks",
+      "toc",
+      "captions",
+      "styles",
+      "fields",
+      "comments",
+      "revisions",
+      "mailMerge",
+      "footnotes",
+      "bookmarks",
+      "crossReferences",
+      "citations",
+      "columns",
+      "watermark",
+      "contentControls",
+      "templates",
+      "audit"
+    ],
+    "excel": [
+      "charts",
+      "conditionalFormatting",
+      "dataValidation",
+      "comments",
+      "images",
+      "mergedCells",
+      "formulas",
+      "dataTools",
+      "audit",
+      "pivots",
+      "tables",
+      "protection",
+      "import"
+    ],
+    "ppt": [
+      "charts",
+      "images",
+      "transitions",
+      "shapes",
+      "themes",
+      "audit",
+      "animations",
+      "smartart",
+      "notes",
+      "sections",
+      "layouts",
+      "templates",
+      "master",
+      "comments",
+      "media"
+    ]
+  }
+}

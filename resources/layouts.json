@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "layouts": [
+    {
+      "id": "cover",
+      "label": "封面",
+      "family": "title",
+      "description": "封面"
+    },
+    {
+      "id": "title-subtitle",
+      "label": "标题+副标题",
+      "family": "title",
+      "description": "标题+副标题"
+    },
+    {
+      "id": "section",
+      "label": "章节过渡",
+      "family": "section",
+      "description": "章节过渡"
+    },
+    {
+      "id": "section-number",
+      "label": "编号章节",
+      "family": "section",
+      "description": "编号章节"
+    },
+    {
+      "id": "agenda",
+      "label": "议程",
+      "family": "bullets",
+      "description": "议程"
+    },
+    {
+      "id": "bullets",
+      "label": "要点列表",
+      "family": "bullets",
+      "description": "要点列表"
+    },
+    {
+      "id": "bullets-two-column",
+      "label": "双栏要点",
+      "family": "two-col",
+      "description": "双栏要点"
+    },
+    {
+      "id": "three-column",
+      "label": "三栏要点",
+      "family": "three-col",
+      "description": "三栏要点"
+    },
+    {
+      "id": "four-quadrant",
+      "label": "四象限",
+      "family": "four-quadrant",
+      "description": "四象限"
+    },
+    {
+      "id": "kpi",
+      "label": "KPI 指标",
+      "family": "kpi",
+      "description": "KPI 指标"
+    },
+    {
+      "id": "stats",
+      "label": "数据卡片",
+      "family": "kpi",
+      "description": "数据卡片"
+    },
+    {
+      "id": "timeline",
+      "label": "时间线",
+      "family": "timeline",
+      "description": "时间线"
+    },
+    {
+      "id": "roadmap",
+      "label": "路线图",
+      "family": "timeline",
+      "description": "路线图"
+    },
+    {
+      "id": "process",
+      "label": "流程图",
+      "family": "process",
+      "description": "流程图"
+    },
+    {
+      "id": "process-chevron",
+      "label": "箭头流程",
+      "family": "process",
+      "description": "箭头流程"
+    },
+    {
+      "id": "comparison",
+      "label": "对比",
+      "family": "comparison",
+      "description": "对比"
+    },
+    {
+      "id": "before-after",
+      "label": "前后对比",
+      "family": "comparison",
+      "description": "前后对比"
+    },
+    {
+      "id": "matrix",
+      "label": "矩阵",
+      "family": "matrix",
+      "description": "矩阵"
+    },
+    {
+      "id": "swot",
+      "label": "SWOT",
+      "family": "matrix",
+      "description": "SWOT"
+    },
+    {
+      "id": "quote",
+      "label": "引言",
+      "family": "quote",
+      "description": "引言"
+    },
+    {
+      "id": "statement",
+      "label": "观点陈述",
+      "family": "quote",
+      "description": "观点陈述"
+    },
+    {
+      "id": "image-left",
+      "label": "左图右文",
+      "family": "image-left",
+      "description": "左图右文"
+    },
+    {
+      "id": "image-right",
+      "label": "左文右图",
+      "family": "image-right",
+      "description": "左文右图"
+    },
+    {
+      "id": "full-image",
+      "label": "全屏图片",
+      "family": "full-image",
+      "description": "全屏图片"
+    },
+    {
+      "id": "gallery",
+      "label": "图片墙",
+      "family": "gallery",
+      "description": "图片墙"
+    },
+    {
+      "id": "table",
+      "label": "表格",
+      "family": "table",
+      "description": "表格"
+    },
+    {
+      "id": "chart",
+      "label": "图表",
+      "family": "chart",
+      "description": "图表"
+    },
+    {
+      "id": "chart-split",
+      "label": "图表+要点",
+      "family": "chart-split",
+      "description": "图表+要点"
+    },
+    {
+      "id": "cards",
+      "label": "卡片",
+      "family": "cards",
+      "description": "卡片"
+    },
+    {
+      "id": "cards-three",
+      "label": "三卡片",
+      "family": "cards",
+      "description": "三卡片"
+    },
+    {
+      "id": "team",
+      "label": "团队",
+      "family": "cards",
+      "description": "团队"
+    },
+    {
+      "id": "org",
+      "label": "组织架构",
+      "family": "process",
+      "description": "组织架构"
+    },
+    {
+      "id": "funnel",
+      "label": "漏斗",
+      "family": "process",
+      "description": "漏斗"
+    },
+    {
+      "id": "pyramid",
+      "label": "金字塔",
+      "family": "process",
+      "description": "金字塔"
+    },
+    {
+      "id": "cycle",
+      "label": "循环",
+      "family": "process",
+      "description": "循环"
+    },
+    {
+      "id": "checklist",
+      "label": "检查清单",
+      "family": "bullets",
+      "description": "检查清单"
+    },
+    {
+      "id": "dashboard",
+      "label": "仪表盘",
+      "family": "kpi",
+      "description": "仪表盘"
+    },
+    {
+      "id": "closing",
+      "label": "结尾",
+      "family": "closing",
+      "description": "结尾"
+    }
+  ]
+}

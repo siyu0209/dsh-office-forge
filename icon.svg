@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Office Forge">
+  <defs>
+    <linearGradient id="g" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2F6BFF"/>
+      <stop offset="1" stop-color="#7A3CFF"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#g)"/>
+  <path d="M18 18h17l11 11v17a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V22a4 4 0 0 1 4-4Z" fill="#fff" opacity=".96"/>
+  <path d="M35 18v11h11" fill="none" stroke="#2F6BFF" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M22 38h16M22 44h11" stroke="#2F6BFF" stroke-width="3" stroke-linecap="round"/>
+</svg>

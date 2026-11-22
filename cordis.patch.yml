@@ -1,0 +1,7 @@
+# dsh-office-forge bundle patch.
+# The entry is intentionally minimal: all behaviour is configured through the
+# plugin Config schema, so a profile can override any limit without editing code.
+- insert:
+    - id: dsh-office-forge
+      name: dsh-office-forge
+      config: {}
