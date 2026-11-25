@@ -37,6 +37,8 @@ jobs:
   release:
     needs: verify
     runs-on: windows-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -48,7 +50,7 @@ jobs:
           $tarball = (Get-ChildItem dsh-office-forge-*.tgz | Select-Object -First 1).FullName
           python scripts/build_offline.py --tarball $tarball --output dist/office-forge-offline.zip
       - name: Publish npm
-        if: ${{ secrets.NPM_TOKEN != '' }}
+        if: ${{ env.NPM_TOKEN != '' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
