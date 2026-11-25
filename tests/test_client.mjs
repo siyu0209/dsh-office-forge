@@ -84,12 +84,16 @@ const walk = (node, visit) => {
   for (const child of node.children ?? []) walk(child, visit);
 };
 let checkButton;
+let capabilitiesButton;
 walk(tree, (node) => {
   if (node.type === "button" && node.props["data-officeforge-check"] !== undefined) checkButton = node;
+  if (node.type === "button" && node.props["data-officeforge-capabilities"] !== undefined) capabilitiesButton = node;
 });
 assert.ok(checkButton, "status card must render a check-environment button");
 assert.equal(checkButton.props.type, "button");
 assert.equal(typeof checkButton.props.onClick, "function");
+assert.ok(capabilitiesButton, "status card must render a capabilities button");
+assert.equal(typeof capabilitiesButton.props.onClick, "function");
 
 const fallback = slotRegistration.component({});
 assert.equal(fallback.props["data-officeforge-status"], "dsh-office-forge");

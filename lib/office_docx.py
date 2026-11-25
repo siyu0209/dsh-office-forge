@@ -1516,11 +1516,15 @@ def _health_docx(path: str, args: Mapping[str, Any]) -> dict[str, Any]:
             else:
                 add("duplicate_heading", "medium", "heading text repeats at the same level", index=block["index"], firstIndex=first["index"], level=level, text=text)
 
-        # A heading followed by another heading, or ending the document, has no
-        # body content. A table counts as content: "1.1 数据" directly above a
-        # table is a normal report pattern, not an orphan heading.
+        # A heading followed by another heading at the same or higher level, or
+        # ending the document, has no body content. A table counts as content:
+        # "1.1 数据" directly above a table is a normal report pattern, not an
+        # orphan heading. A deeper heading is a normal outline transition
+        # (document title -> chapter -> section), not an orphan heading.
         next_block = sequence[position + 1] if position + 1 < len(sequence) else None
-        if next_block is None or next_block["kind"] == "heading":
+        if next_block is None:
+            add("orphan_heading", "medium", "heading is not followed by body text", index=block["index"], level=level, text=text)
+        elif next_block["kind"] == "heading" and next_block.get("level", 0) <= level:
             add("orphan_heading", "medium", "heading is not followed by body text", index=block["index"], level=level, text=text)
 
     empty_run: list[dict[str, Any]] = []

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "templates": [
+    {
+      "id": "academic-paper",
+      "label": "学术论文汇报",
+      "theme": "academic",
+      "slides": [
+        {"layout": "cover", "title": "论文题目", "subtitle": "作者 / 单位"},
+        {"layout": "agenda", "title": "汇报提纲", "subtitle": "研究背景\n研究方法\n实验结果\n结论"},
+        {"layout": "bullets", "title": "研究背景", "bullets": ["问题定义", "研究动机", "主要贡献"]},
+        {"layout": "chart", "title": "实验结果", "subtitle": "主要指标对比"},
+        {"layout": "closing", "title": "结论与展望", "subtitle": "谢谢"}
+      ]
+    },
+    {
+      "id": "thesis-defense",
+      "label": "学位论文答辩",
+      "theme": "academic",
+      "slides": [
+        {"layout": "cover", "title": "学位论文答辩", "subtitle": "姓名 / 导师 / 日期"},
+        {"layout": "agenda", "title": "答辩提纲", "subtitle": "选题背景\n研究内容\n创新点\n结论"},
+        {"layout": "bullets", "title": "研究内容", "bullets": ["研究问题", "技术路线", "实验设计"]},
+        {"layout": "table", "title": "实验数据", "subtitle": "主要结果汇总"},
+        {"layout": "closing", "title": "致谢", "subtitle": "请各位老师批评指正"}
+      ]
+    }
+  ]
+}

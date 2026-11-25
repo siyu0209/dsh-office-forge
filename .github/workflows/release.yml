@@ -1,0 +1,62 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Python dependencies
+        run: python -m pip install --disable-pip-version-check python-docx openpyxl python-pptx pypdf pillow
+      - name: Syntax checks
+        run: |
+          node --check lib/index.js
+          node --check lib/client.js
+          node --check lib/skill.js
+          python -m compileall -q lib
+      - name: Plugin tests
+        run: |
+          node tests/test_plugin.mjs
+          node tests/test_plugin_config.mjs
+          node tests/test_compatibility.mjs
+      - name: Engine tests
+        run: python tests/test_engine.py
+      - name: Fuzz tests
+        run: python tests/test_fuzz.py
+
+  release:
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm pack --json
+      - name: Build offline zip
+        run: |
+          $tarball = (Get-ChildItem dsh-office-forge-*.tgz | Select-Object -First 1).FullName
+          python scripts/build_offline.py --tarball $tarball --output dist/office-forge-offline.zip
+      - name: Publish npm
+        if: ${{ secrets.NPM_TOKEN != '' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          $tarball = (Get-ChildItem dsh-office-forge-*.tgz | Select-Object -First 1).FullName
+          npm publish $tarball --access public
+      - name: Attach release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dsh-office-forge-*.tgz
+            dist/office-forge-offline.zip

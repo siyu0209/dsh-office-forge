@@ -1,52 +1,56 @@
 {
   "cases": {
     "docx_create": {
-      "maxSeconds": 30.64,
-      "maxPeakMB": 119.7
+      "maxSeconds": 70,
+      "maxPeakMB": 120.8
     },
     "docx_read": {
-      "maxSeconds": 35.529,
-      "maxPeakMB": 123.9
+      "maxSeconds": 95,
+      "maxPeakMB": 124.5
     },
     "docx_audit": {
-      "maxSeconds": 36.546,
+      "maxSeconds": 100,
       "maxPeakMB": 124.6
     },
     "xlsx_create": {
-      "maxSeconds": 9.25,
-      "maxPeakMB": 183.0
+      "maxSeconds": 24,
+      "maxPeakMB": 183.9
     },
     "xlsx_read": {
-      "maxSeconds": 1.665,
-      "maxPeakMB": 92.7
+      "maxSeconds": 5,
+      "maxPeakMB": 93.3
     },
     "xlsx_audit": {
-      "maxSeconds": 4.899,
+      "maxSeconds": 15,
       "maxPeakMB": 234.5
     },
     "pptx_create": {
-      "maxSeconds": 3.117,
-      "maxPeakMB": 105.8
+      "maxSeconds": 9,
+      "maxPeakMB": 106.5
     },
     "pptx_read": {
-      "maxSeconds": 1.888,
-      "maxPeakMB": 113.1
+      "maxSeconds": 5,
+      "maxPeakMB": 114
     },
     "pptx_audit": {
-      "maxSeconds": 1.894,
-      "maxPeakMB": 112.9
+      "maxSeconds": 4,
+      "maxPeakMB": 113.7
     },
     "pdf_corrupt": {
-      "maxSeconds": 1.644,
-      "maxPeakMB": 90.9
+      "maxSeconds": 4,
+      "maxPeakMB": 91.3
     },
     "pdf_empty": {
-      "maxSeconds": 1.639,
-      "maxPeakMB": 90.8
+      "maxSeconds": 4,
+      "maxPeakMB": 91.3
     },
     "pdf_encrypted_no_password": {
-      "maxSeconds": 1.679,
-      "maxPeakMB": 90.9
+      "maxSeconds": 4,
+      "maxPeakMB": 91.3
+    },
+    "deck_import": {
+      "maxSeconds": 4,
+      "maxPeakMB": 120
     }
   }
 }

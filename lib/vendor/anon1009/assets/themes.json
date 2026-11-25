@@ -1,0 +1,262 @@
+{
+  "themes": [
+    {
+      "id": "executive-navy",
+      "name": "高管深海蓝 (Executive Navy)",
+      "mode": "light",
+      "audience": "战略汇报、季度复盘、B2B 商业提案、管理层述职",
+      "colors": {
+        "background": "#F8FAFC",
+        "coverBackground": "#0F172A",
+        "surface": "#FFFFFF",
+        "surfaceAlt": "#EFF6FF",
+        "primary": "#1E3A8A",
+        "secondary": "#0284C7",
+        "accent": "#F59E0B",
+        "textPrimary": "#0F172A",
+        "textSecondary": "#475569",
+        "textOnDark": "#F8FAFC",
+        "border": "#CBD5E1",
+        "success": "#059669",
+        "warning": "#D97706",
+        "danger": "#DC2626",
+        "chartPalette": ["#1E3A8A", "#0284C7", "#F59E0B", "#059669", "#6366F1", "#64748B"]
+      },
+      "typography": {
+        "headingFont": "Microsoft YaHei",
+        "bodyFont": "Microsoft YaHei",
+        "latinHeadingFont": "Aptos",
+        "latinBodyFont": "Aptos",
+        "coverTitlePt": 40,
+        "slideTitlePt": 26,
+        "sectionTitlePt": 16,
+        "bodyPt": 14,
+        "captionPt": 11
+      },
+      "layout": {
+        "marginLeftIn": 0.7,
+        "marginRightIn": 0.7,
+        "marginTopIn": 0.55,
+        "marginBottomIn": 0.55,
+        "gutterIn": 0.25,
+        "cardRadiusRatio": 0.04,
+        "accentBarHeightIn": 0.06
+      }
+    },
+    {
+      "id": "minimal-ivory",
+      "name": "极简暖白 (Minimal Ivory)",
+      "mode": "light",
+      "audience": "咨询顾问报告、产品发布、设计方案、人物/团队介绍",
+      "colors": {
+        "background": "#FAF8F5",
+        "coverBackground": "#1C1917",
+        "surface": "#FFFFFF",
+        "surfaceAlt": "#F5F0EB",
+        "primary": "#1C1917",
+        "secondary": "#57534E",
+        "accent": "#EA580C",
+        "textPrimary": "#1C1917",
+        "textSecondary": "#57534E",
+        "textOnDark": "#FAF8F5",
+        "border": "#E7E5E4",
+        "success": "#15803D",
+        "warning": "#CA8A04",
+        "danger": "#B91C1C",
+        "chartPalette": ["#1C1917", "#EA580C", "#78716C", "#0D9488", "#D97706", "#A8A29E"]
+      },
+      "typography": {
+        "headingFont": "Microsoft YaHei",
+        "bodyFont": "Microsoft YaHei",
+        "latinHeadingFont": "Inter",
+        "latinBodyFont": "Inter",
+        "coverTitlePt": 42,
+        "slideTitlePt": 26,
+        "sectionTitlePt": 16,
+        "bodyPt": 14,
+        "captionPt": 11
+      },
+      "layout": {
+        "marginLeftIn": 0.75,
+        "marginRightIn": 0.75,
+        "marginTopIn": 0.6,
+        "marginBottomIn": 0.55,
+        "gutterIn": 0.3,
+        "cardRadiusRatio": 0.03,
+        "accentBarHeightIn": 0.05
+      }
+    },
+    {
+      "id": "tech-obsidian",
+      "name": "科技暗夜 (Tech Obsidian)",
+      "mode": "dark",
+      "audience": "AI 产品发布、技术架构分享、工程复盘、开发者大会",
+      "colors": {
+        "background": "#0B1120",
+        "coverBackground": "#020617",
+        "surface": "#1E293B",
+        "surfaceAlt": "#172554",
+        "primary": "#38BDF8",
+        "secondary": "#818CF8",
+        "accent": "#34D399",
+        "textPrimary": "#F1F5F9",
+        "textSecondary": "#94A3B8",
+        "textOnDark": "#F8FAFC",
+        "border": "#334155",
+        "success": "#34D399",
+        "warning": "#FBBF24",
+        "danger": "#F87171",
+        "chartPalette": ["#38BDF8", "#818CF8", "#34D399", "#FBBF24", "#FB7185", "#94A3B8"]
+      },
+      "typography": {
+        "headingFont": "Microsoft YaHei",
+        "bodyFont": "Microsoft YaHei",
+        "latinHeadingFont": "Segoe UI",
+        "latinBodyFont": "Segoe UI",
+        "coverTitlePt": 40,
+        "slideTitlePt": 26,
+        "sectionTitlePt": 16,
+        "bodyPt": 14,
+        "captionPt": 11
+      },
+      "layout": {
+        "marginLeftIn": 0.7,
+        "marginRightIn": 0.7,
+        "marginTopIn": 0.55,
+        "marginBottomIn": 0.55,
+        "gutterIn": 0.25,
+        "cardRadiusRatio": 0.05,
+        "accentBarHeightIn": 0.05
+      }
+    },
+    {
+      "id": "academic-emerald",
+      "name": "学术墨绿金 (Academic Emerald)",
+      "mode": "light",
+      "audience": "论文答辩、科研开题、医疗健康报告、教育培训课件",
+      "colors": {
+        "background": "#F7FAF8",
+        "coverBackground": "#064E3B",
+        "surface": "#FFFFFF",
+        "surfaceAlt": "#ECFDF5",
+        "primary": "#065F46",
+        "secondary": "#047857",
+        "accent": "#B45309",
+        "textPrimary": "#06281E",
+        "textSecondary": "#374151",
+        "textOnDark": "#ECFDF5",
+        "border": "#D1FAE5",
+        "success": "#059669",
+        "warning": "#D97706",
+        "danger": "#DC2626",
+        "chartPalette": ["#065F46", "#B45309", "#0D9488", "#4B5563", "#10B981", "#9CA3AF"]
+      },
+      "typography": {
+        "headingFont": "Microsoft YaHei",
+        "bodyFont": "Microsoft YaHei",
+        "latinHeadingFont": "Georgia",
+        "latinBodyFont": "Calibri",
+        "coverTitlePt": 38,
+        "slideTitlePt": 25,
+        "sectionTitlePt": 16,
+        "bodyPt": 14,
+        "captionPt": 11
+      },
+      "layout": {
+        "marginLeftIn": 0.7,
+        "marginRightIn": 0.7,
+        "marginTopIn": 0.55,
+        "marginBottomIn": 0.55,
+        "gutterIn": 0.25,
+        "cardRadiusRatio": 0.03,
+        "accentBarHeightIn": 0.06
+      }
+    },
+    {
+      "id": "editorial-terracotta",
+      "name": "杂志陶土暖橙 (Editorial Terracotta)",
+      "mode": "light",
+      "audience": "品牌营销、消费品策划、创意提案、年度故事回顾",
+      "colors": {
+        "background": "#FFFBF7",
+        "coverBackground": "#431407",
+        "surface": "#FFFFFF",
+        "surfaceAlt": "#FFEDD5",
+        "primary": "#9A3412",
+        "secondary": "#C2410C",
+        "accent": "#0F766E",
+        "textPrimary": "#291811",
+        "textSecondary": "#5C4740",
+        "textOnDark": "#FFF7ED",
+        "border": "#FED7AA",
+        "success": "#0F766E",
+        "warning": "#D97706",
+        "danger": "#BE123C",
+        "chartPalette": ["#9A3412", "#0F766E", "#EA580C", "#D97706", "#57534E", "#FB923C"]
+      },
+      "typography": {
+        "headingFont": "Microsoft YaHei",
+        "bodyFont": "Microsoft YaHei",
+        "latinHeadingFont": "Aptos",
+        "latinBodyFont": "Aptos",
+        "coverTitlePt": 40,
+        "slideTitlePt": 26,
+        "sectionTitlePt": 16,
+        "bodyPt": 14,
+        "captionPt": 11
+      },
+      "layout": {
+        "marginLeftIn": 0.75,
+        "marginRightIn": 0.75,
+        "marginTopIn": 0.55,
+        "marginBottomIn": 0.55,
+        "gutterIn": 0.28,
+        "cardRadiusRatio": 0.04,
+        "accentBarHeightIn": 0.06
+      }
+    },
+    {
+      "id": "morandi-slate",
+      "name": "莫兰迪灰蓝 (Morandi Slate)",
+      "mode": "light",
+      "audience": "财务分析、运营周报、SOP 流程规范、内部项目同步",
+      "colors": {
+        "background": "#F4F6F8",
+        "coverBackground": "#334155",
+        "surface": "#FFFFFF",
+        "surfaceAlt": "#E2E8F0",
+        "primary": "#3B5978",
+        "secondary": "#64748B",
+        "accent": "#C07A5B",
+        "textPrimary": "#1E293B",
+        "textSecondary": "#475569",
+        "textOnDark": "#F8FAFC",
+        "border": "#CBD5E1",
+        "success": "#3D7A68",
+        "warning": "#C48A3A",
+        "danger": "#B84A4A",
+        "chartPalette": ["#3B5978", "#C07A5B", "#3D7A68", "#64748B", "#8C6D8C", "#94A3B8"]
+      },
+      "typography": {
+        "headingFont": "Microsoft YaHei",
+        "bodyFont": "Microsoft YaHei",
+        "latinHeadingFont": "Calibri",
+        "latinBodyFont": "Calibri",
+        "coverTitlePt": 38,
+        "slideTitlePt": 25,
+        "sectionTitlePt": 16,
+        "bodyPt": 13.5,
+        "captionPt": 11
+      },
+      "layout": {
+        "marginLeftIn": 0.7,
+        "marginRightIn": 0.7,
+        "marginTopIn": 0.55,
+        "marginBottomIn": 0.55,
+        "gutterIn": 0.25,
+        "cardRadiusRatio": 0.03,
+        "accentBarHeightIn": 0.05
+      }
+    }
+  ]
+}

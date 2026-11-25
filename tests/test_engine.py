@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import wave
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -945,6 +946,18 @@ def test_docx_audit() -> None:
     for code in ("heading_jump", "duplicate_heading", "orphan_heading", "placeholder_left", "long_paragraph", "empty_paragraph_run"):
         check(code in codes, f"docx audit detects {code}")
     check(health["score"] < 100 and health["issueCount"] >= 6, "docx health computes score and issue count")
+
+    title_path = WORK / "audit-title.docx"
+    ok({
+        "action": "create",
+        "path": str(title_path),
+        "type": "docx",
+        "overwrite": True,
+        "spec": {"title": "报告标题", "sections": [{"heading": "第一章", "paragraphs": ["正文"]}]},
+    })
+    title_health = ok({"action": "audit", "path": str(title_path), "type": "docx"})
+    check("orphan_heading" not in title_health["summary"], "document title followed by chapter is not an orphan heading")
+
     profile = ok({"action": "audit", "path": str(path), "type": "docx", "mode": "profile"})
     check(profile["stats"]["headings"] >= 6, "docx profile counts headings")
     check(profile["stats"]["tables"] == 1, "docx profile counts tables")
@@ -1092,6 +1105,33 @@ def test_native_v05() -> None:
         check(result["result"]["backend"] == "com", "native exportPdf reports the COM backend")
     else:
         check(result.get("error", {}).get("code") in {"BACKEND_UNAVAILABLE", "COM_ERROR"}, "native exportPdf reports a classified backend error")
+
+
+def test_native_update_fields() -> None:
+    print("[native update fields]")
+    source = WORK / "native-update.docx"
+    ok({
+        "action": "create",
+        "path": str(source),
+        "type": "docx",
+        "overwrite": True,
+        "spec": {
+            "title": "Field update",
+            "toc": True,
+            "sections": [
+                {"heading": "Chapter One", "paragraphs": ["First body"]},
+                {"heading": "Chapter Two", "paragraphs": ["Second body"]},
+            ],
+        },
+    })
+    target = WORK / "native-update-out.docx"
+    result = call({"action": "native", "operation": "updateFields", "path": str(source), "output": str(target), "overwrite": True})
+    if result.get("ok"):
+        check(target.exists() and target.stat().st_size > 1000, "native updateFields produced a DOCX when COM is available")
+        check(result["result"].get("fieldsUpdated", 0) >= 1 and result["result"].get("tocUpdated", 0) >= 1, "native updateFields reports field and TOC counts")
+        check(result["result"].get("backend") == "com", "native updateFields reports the COM backend")
+    else:
+        check(result.get("error", {}).get("code") in {"BACKEND_UNAVAILABLE", "COM_ERROR"}, "native updateFields reports a classified backend error")
 
 
 def test_convert_v05() -> None:
@@ -1405,6 +1445,82 @@ def test_pptx_v08() -> None:
     check(conflict.get("ok") is False and conflict["error"]["code"] == "SECTION_CONFLICT", "pptx section conflict rejected")
 
 
+def test_deck_edit() -> None:
+    print("[deck design-aware edit]")
+    base = WORK / "edit-base.pptx"
+    ok({"action": "create", "type": "pptx", "path": str(base), "overwrite": True, "spec": {
+        "title": "Edit base", "theme": "consulting",
+        "slides": [
+            {"layout": "cover", "title": "Before", "subtitle": "Old"},
+            {"layout": "bullets", "title": "Points", "bullets": ["A", "B"]},
+        ],
+    }})
+    out = WORK / "edit-output.pptx"
+    result = ok({
+        "action": "deck", "operation": "edit", "path": str(base), "output": str(out),
+        "engine": "legacy", "overwrite": True,
+        "operations": [
+            {"op": "setTheme", "theme": "swiss"},
+            {"op": "setTitle", "slide": 0, "title": "After"},
+            {"op": "setNotes", "slide": 1, "notes": "edited note"},
+            {"op": "appendBlock", "slide": 1, "block": {"type": "bullets", "items": ["C"]}},
+        ],
+    })
+    check(result.get("operationsApplied") == 4 and out.stat().st_size > 5000, "deck edit writes an edited deck")
+    imported = ok({"action": "deck", "operation": "import", "path": str(out), "args": {}})
+    deck = imported["deck"]
+    check(deck["slides"][0].get("title") == "After", "deck edit updates slide title")
+    check(deck["slides"][1].get("notes") == "edited note", "deck edit updates speaker notes")
+    check(any("C" in (block.get("items") or []) for block in deck["slides"][1].get("blocks", [])), "deck edit appends a block")
+
+    spec_out = WORK / "edit-spec-output.pptx"
+    spec_result = ok({
+        "action": "deck", "operation": "edit", "output": str(spec_out), "engine": "legacy", "overwrite": True,
+        "spec": {"title": "Spec base", "slides": [{"layout": "cover", "title": "Start"}]},
+        "operations": [{"op": "addSlide", "slide": {"layout": "section", "title": "New"}}, {"op": "setTitle", "slide": 0, "title": "Changed"}],
+    })
+    check(spec_result.get("operationsApplied") == 2 and spec_out.exists(), "deck edit accepts spec-only base")
+    spec_imported = ok({"action": "deck", "operation": "import", "path": str(spec_out), "args": {}})
+    check(len(spec_imported["deck"]["slides"]) == 2 and spec_imported["deck"]["slides"][0].get("title") == "Changed", "deck edit spec base and added slide persist")
+
+    bad = call({"action": "deck", "operation": "edit", "path": str(base), "output": str(WORK / "bad.pptx"), "overwrite": True, "operations": [{"op": "setTitle", "slide": 99, "title": "No"}]})
+    check(bad.get("ok") is False and bad.get("error", {}).get("code") == "DECK_INDEX_OUT_OF_RANGE", "deck edit rejects out-of-range index")
+
+
+def test_deck_verify() -> None:
+    print("[deck verify]")
+    from PIL import Image, ImageDraw
+
+    deck_path = WORK / "verify-deck.pptx"
+    spec = {"slides": [{"title": "First verify"}, {"title": "Second verify"}]}
+    ok({"action": "deck", "operation": "render", "path": str(deck_path), "engine": "legacy", "spec": spec})
+    image_paths = []
+    for index, color in enumerate(((30, 90, 160), (160, 60, 40)), start=1):
+        image_path = WORK / f"verify-page-{index}.png"
+        image = Image.new("RGB", (640, 360), "white")
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((40, 40, 600, 320), fill=color)
+        image.save(image_path)
+        image_paths.append({"path": str(image_path), "page": index})
+    result = ok({
+        "action": "deck", "operation": "verify", "path": str(deck_path), "spec": spec,
+        "args": {"images": image_paths, "pageCount": 2, "missingFonts": []},
+    })
+    check(result["mode"] == "verify" and result["pageCount"] == 2, "verify reports two slides")
+    check(result["renderedPages"] == 2, "verify sees two rendered pages")
+    check(result["valid"] is True, "clean rendered deck verifies")
+    check({item["name"] for item in result["checks"]} >= {"slideCount", "renderPages", "textCoverage", "geometry"}, "verify returns structured checks")
+
+    blank_path = WORK / "verify-page-blank.png"
+    Image.new("RGB", (640, 360), "white").save(blank_path)
+    blank = ok({
+        "action": "deck", "operation": "verify", "path": str(deck_path), "spec": spec,
+        "args": {"images": [{"path": str(blank_path), "page": 1}, image_paths[1]], "pageCount": 2},
+    })
+    check(any(issue["code"] == "BLANK_RENDER" for issue in blank["issues"]), "blank rendered page is reported")
+    check(blank["valid"] is False and blank["score"] < 100, "blank page lowers verify score")
+
+
 def test_document_properties() -> None:
     print("[properties v0.9]")
     docx_path = WORK / "props.docx"
@@ -1475,6 +1591,388 @@ def test_document_properties() -> None:
     check(not str(presentation.core_properties.created).startswith("2013"), "pptx created is not a template stamp")
 
 
+def test_ppt_v015() -> None:
+    print("[ppt-v015]")
+    legacy_path = WORK / "legacy.pptx"
+    legacy = ok({
+        "action": "create", "type": "pptx", "path": str(legacy_path),
+        "pptxEngine": "legacy",
+        "spec": {"slides": [{"layout": "title", "title": "Legacy", "subtitle": "Engine"}]},
+    })
+    check(legacy.get("engine") == "legacy", "legacy PPT engine is selectable")
+
+    studio_path = WORK / "studio.pptx"
+    studio = ok({
+        "action": "create", "type": "pptx", "path": str(studio_path),
+        "pptxEngine": "studio",
+        "spec": {"slides": [{"title": "Studio", "bullets": ["One", "Two"]}]},
+    })
+    check(studio.get("engine") == "studio", "studio PPT engine is selectable")
+
+    auto_path = WORK / "auto.pptx"
+    auto = ok({
+        "action": "create", "type": "pptx", "path": str(auto_path),
+        "pptxEngine": "auto",
+        "spec": {"theme": "ocean", "slides": [{"title": "Auto", "bullets": ["One"]}]},
+    })
+    check(auto.get("engine") == "studio", "auto picks studio when a theme is requested")
+
+    fallback_path = WORK / "studio-fallback.pptx"
+    fallback = ok({
+        "action": "create", "type": "pptx", "path": str(fallback_path),
+        "pptxEngine": "studio",
+        "spec": {"theme": "ocean", "slides": [{"title": "Comments", "comments": [{"text": "studio cannot render comments"}]}]},
+    })
+    check(fallback.get("engine") == "legacy" and fallback.get("studioFallback") == "STUDIO_UNSUPPORTED", "studio falls back for unsupported slide objects")
+
+    aesthetic = ok({"action": "audit", "type": "pptx", "path": str(legacy_path), "mode": "aesthetic"})
+    check(aesthetic["mode"] == "aesthetic" and "score" in aesthetic, "pptx aesthetic audit returns a score")
+
+    beautified = ok({
+        "action": "beautify", "type": "pptx", "path": str(studio_path),
+        "engine": "builtin",
+        "args": {"theme": "ocean", "backup": True},
+    })
+    check(beautified["theme"] == "ocean" and beautified["fixes"] >= 0, "pptx beautify applies a theme")
+    check(beautified["afterScore"] >= beautified["beforeScore"], "pptx beautify does not lower the deck score")
+
+    anon_beautified = ok({
+        "action": "beautify", "type": "pptx", "path": str(studio_path),
+        "engine": "anon1009",
+        "args": {"theme": "executive-navy", "output": str(WORK / "anon-beautify-direct.pptx"), "backup": True},
+    })
+    check(anon_beautified.get("adapter") == "anon1009" and anon_beautified.get("outputPath"), "anon1009 beautify adapter runs")
+
+    html_path = WORK / "deck.html"
+    html = ok({
+        "action": "create", "type": "html", "path": str(html_path),
+        "spec": {"title": "Web deck", "theme": "ocean", "slides": [
+            {"layout": "title", "title": "Web deck", "subtitle": "Portable"},
+            {"title": "KPI", "kpis": [{"label": "A", "value": "1"}]},
+        ]},
+    })
+    check(html["type"] == "html" and html["slides"] == 2, "HTML deck creates two slides")
+    text = html_path.read_text(encoding="utf-8")
+    check("<html" in text and "data-slide=\"2\"" in text and "Web deck" in text, "HTML deck is self-contained")
+
+    blocked = call({
+        "action": "create", "type": "html", "path": str(WORK / "blocked.html"),
+        "spec": {"slides": [{"title": "blocked"}]},
+        "features": {"ppt": {"web": False}},
+    })
+    check(not blocked.get("ok") and blocked.get("error", {}).get("code") == "FEATURE_DISABLED", "HTML deck honors ppt.web feature switch")
+
+    blocked_beautify = call({
+        "action": "beautify", "type": "pptx", "path": str(studio_path),
+        "args": {"theme": "ocean"}, "features": {"ppt": {"beautify": False}},
+    })
+    check(not blocked_beautify.get("ok") and blocked_beautify.get("error", {}).get("code") == "FEATURE_DISABLED", "beautify honors ppt.beautify feature switch")
+
+
+def test_deck_v017() -> None:
+    print("[deck-v017]")
+    planned = ok({
+        "action": "deck",
+        "operation": "plan",
+        "spec": {
+            "title": "Deck IR Test",
+            "slides": [
+                {"layout": "cover", "title": "封面", "subtitle": "Deck IR"},
+                {"layout": "kpi", "title": "指标", "blocks": [{"type": "kpi", "items": [{"label": "A", "value": "1"}]}]},
+            ],
+        },
+    })
+    check(planned["schemaVersion"] == 1 and planned["summary"]["slides"] == 2, "deck plan returns Deck IR")
+    check("kpi" in planned["summary"]["blockTypes"], "deck plan counts blocks")
+
+    catalog = ok({"action": "deck", "operation": "catalog"})
+    check(len(catalog["layouts"]) >= 30 and len(catalog["templates"]) >= 10, "deck catalog exposes layouts and templates")
+    check(any(item["id"] == "officeforge-core" for item in catalog["templatePacks"]), "deck catalog exposes template packs")
+    check(any(item["name"] == "studio" for item in catalog["adapters"]), "deck catalog exposes studio adapter")
+
+    rendered_path = WORK / "deck-ir.pptx"
+    rendered = ok({
+        "action": "deck", "operation": "render", "path": str(rendered_path),
+        "engine": "legacy",
+        "spec": {"title": "Deck IR Test", "slides": [{"layout": "cover", "title": "封面"}]},
+    })
+    check(rendered["deckSchemaVersion"] == 1 and rendered["adapter"] == "legacy", "deck render uses the registry")
+    check(rendered["summary"]["slides"] == 1, "deck render reports a summary")
+
+    audited = ok({"action": "deck", "operation": "audit", "type": "pptx", "path": str(rendered_path), "mode": "deck"})
+    check("score" in audited and audited["mode"] == "deck", "deck audit returns a score")
+
+    repaired = ok({
+        "action": "deck", "operation": "repair", "type": "pptx", "path": str(rendered_path),
+        "args": {"theme": "ocean", "backup": True},
+    })
+    check("afterScore" in repaired and "beforeScore" in repaired, "deck repair returns before/after scores")
+
+
+def test_deck_v018() -> None:
+    print("[deck-v018]")
+    _pixel()
+    planned = ok({
+        "action": "deck",
+        "operation": "plan",
+        "spec": {
+            "title": "Studio rich deck",
+            "slides": [
+                {"layout": "title", "title": "封面"},
+                {"layout": "table", "blocks": [{"type": "table", "headers": ["项", "值"], "rows": [["A", 1], ["B", 2]]}]},
+                {"layout": "chart", "blocks": [{"type": "chart", "chart": {"kind": "column", "categories": ["A", "B"], "series": [{"name": "值", "values": [1, 2]}]}}]},
+                {"layout": "image-right", "blocks": [{"type": "image", "image": {"path": "pixel.png", "alt": "像素"}}]},
+            ],
+        },
+    })
+    check(planned["summary"]["blockTypes"].get("table") == 1, "deck v018 plan counts table blocks")
+    check(planned["summary"]["blockTypes"].get("chart") == 1, "deck v018 plan counts chart blocks")
+    check(planned["summary"]["blockTypes"].get("image") == 1, "deck v018 plan counts image blocks")
+
+    target = WORK / "deck-v018.pptx"
+    rendered = ok({
+        "action": "deck",
+        "operation": "render",
+        "path": str(target),
+        "engine": "studio",
+        "spec": planned["deck"],
+    })
+    check(rendered["adapter"] == "studio" and rendered["slides"] == 4, "studio renders table/chart/image blocks")
+    check(target.exists() and target.stat().st_size > 5000, "studio rich deck is a non-trivial pptx")
+
+    bad = call({
+        "action": "deck",
+        "operation": "plan",
+        "spec": {"slides": [{"layout": "content", "blocks": [{"type": "not-a-block"}]}]},
+    })
+    check(not bad.get("ok") and bad.get("error", {}).get("code") == "DECK_INVALID", "unknown Deck IR block is rejected")
+
+
+def test_deck_storyboard() -> None:
+    print("[deck-storyboard]")
+    result = ok({
+        "action": "deck",
+        "operation": "storyboard",
+        "spec": {
+            "title": "Storyboard deck",
+            "theme": "forge",
+            "slides": [
+                {"layout": "title", "title": "Opening", "subtitle": "Office Forge", "notes": "Welcome everyone."},
+                {
+                    "layout": "content",
+                    "title": "Plan",
+                    "blocks": [
+                        {"type": "bullets", "items": ["One", "Two", "Three"]},
+                        {"type": "table", "headers": ["A", "B"], "rows": [[1, 2], [3, 4]]},
+                    ],
+                    "notes": "Walk through the plan.",
+                },
+            ],
+        },
+    })
+    check(result.get("mode") == "storyboard", "storyboard mode is returned")
+    check(result.get("slideCount") == 2 and len(result.get("slides", [])) == 2, "storyboard counts slides")
+    check(result["slides"][1]["blockTypes"] == ["bullets", "table"], "storyboard exposes block types")
+    check(result.get("totalEstimatedSeconds", 0) > 0 and result["slides"][0]["notes"] == "Welcome everyone.", "storyboard keeps notes and timing")
+
+    markdown = ok({
+        "action": "deck",
+        "operation": "storyboard",
+        "format": "markdown",
+        "spec": {
+            "title": "Storyboard deck",
+            "slides": [
+                {"layout": "title", "title": "Opening", "notes": "Welcome everyone."},
+            ],
+        },
+    })
+    check(markdown.get("format") == "markdown" and "# Storyboard deck" in markdown.get("markdown", ""), "storyboard markdown has document title")
+    check("## 1. Opening" in markdown.get("markdown", "") and "> Notes: Welcome everyone." in markdown.get("markdown", ""), "storyboard markdown has slide and notes")
+
+
+def test_deck_v100() -> None:
+    print("[deck-v100]")
+    catalog = ok({"action": "deck", "operation": "catalog"})
+    by_name = {item["name"]: item for item in catalog["adapters"]}
+    check({"zbsph", "anon1009", "guizang", "composer"}.issubset(by_name), "deck catalog lists external adapters")
+    check(by_name["zbsph"]["kind"] == "planner" and by_name["guizang"]["kind"] == "skill", "external adapter kinds are exposed")
+    check(by_name["zbsph"]["available"] is True, "installed zbsph adapter is marked available")
+    bad = call({
+        "action": "deck",
+        "operation": "render",
+        "path": str(WORK / "external-adapter.pptx"),
+        "engine": "unknown-adapter",
+        "spec": {"slides": [{"title": "External adapter"}]},
+    })
+    check(not bad.get("ok") and bad.get("error", {}).get("code") == "INVALID_ARGUMENT", "unknown adapter fails explicitly")
+
+
+def test_deck_adapter_auto() -> None:
+    print("[deck-adapter-auto]")
+    plain = ok({
+        "action": "deck",
+        "operation": "render",
+        "path": str(WORK / "auto-plain.pptx"),
+        "engine": "auto",
+        "spec": {"slides": [{"title": "Plain auto"}]},
+    })
+    decision = plain.get("adapterDecision") or {}
+    check(decision.get("selected") == "legacy", "auto selects legacy for plain deck")
+    designed = ok({
+        "action": "deck",
+        "operation": "render",
+        "path": str(WORK / "auto-designed.pptx"),
+        "engine": "auto",
+        "spec": {"theme": "forge", "slides": [{"title": "Designed auto"}]},
+    })
+    check((designed.get("adapterDecision") or {}).get("selected") == "studio", "auto selects studio for designed deck")
+    table = ok({
+        "action": "deck",
+        "operation": "render",
+        "path": str(WORK / "auto-table.pptx"),
+        "engine": "auto",
+        "spec": {"slides": [{"title": "Table auto", "table": {"headers": ["A"], "rows": [["1"]]}}]},
+    })
+    check((table.get("adapterDecision") or {}).get("selected") in ("zbsph", "studio"), "auto selects an advanced renderer for table deck")
+    shape = ok({
+        "action": "deck",
+        "operation": "render",
+        "path": str(WORK / "auto-shape.pptx"),
+        "engine": "auto",
+        "spec": {"slides": [{"title": "Shape auto", "background": "#0F172A", "shapes": [{"kind": "roundRect", "x": 40, "y": 100, "w": 200, "h": 80}]}]},
+    })
+    check((shape.get("adapterDecision") or {}).get("selected") == "zbsph", "auto selects zbsph for shape/background deck")
+    comments = ok({
+        "action": "deck",
+        "operation": "render",
+        "path": str(WORK / "auto-comments.pptx"),
+        "engine": "auto",
+        "spec": {"comments": [{"text": "review"}], "slides": [{"title": "Comments auto"}]},
+    })
+    comments_decision = comments.get("adapterDecision") or {}
+    check(comments_decision.get("selected") == "legacy" and "legacy-only" in str(comments_decision.get("reason")), "auto falls back to legacy for Office-only objects")
+
+
+def test_deck_zbsp() -> None:
+    print("[deck-zbsp]")
+    _pixel()
+    catalog = ok({"action": "deck", "operation": "catalog"})
+    by_name = {item["name"]: item for item in catalog["adapters"]}
+    check(by_name["zbsph"]["available"] is True, "zbsph adapter available")
+    result = ok({
+        "action": "deck",
+        "operation": "render",
+        "path": str(WORK / "zbsp-adapter.pptx"),
+        "engine": "zbsph",
+        "spec": {
+            "title": "ZBSPH adapter",
+            "slides": [
+                {"layout": "title", "title": "ZBSPH Adapter", "subtitle": "Office Forge"},
+                {"title": "Bullets", "bullets": ["One", "Two"]},
+                {
+                    "layout": "content",
+                    "title": "Table chart image",
+                    "table": {"headers": ["Month", "Sales"], "rows": [["Jan", "12"], ["Feb", "18"]]},
+                    "chart": {"kind": "column", "categories": ["Jan", "Feb"], "series": [{"name": "Sales", "values": [12, 18]}]},
+                    "images": [{"path": "pixel.png", "fit": "contain"}],
+                },
+                {
+                    "layout": "content",
+                    "title": "Shapes and background",
+                    "background": "#0F172A",
+                    "shapes": [{"kind": "roundRect", "x": 40, "y": 100, "w": 200, "h": 80, "fill": "#2563EB"}, {"kind": "ellipse", "x": 300, "y": 100, "w": 120, "h": 80, "fill": "#F59E0B"}],
+                    "lines": [{"points": [[40, 220], [500, 220]], "line": {"color": "#38BDF8", "width": 2}, "arrow": True}],
+                },
+            ],
+        },
+    })
+    check(result.get("adapter") == "zbsph", "zbsp render reports adapter")
+    check(result.get("engine") == "zbsph" and result.get("slides") == 4, "zbsp render uses studio engine")
+    check((WORK / "zbsp-adapter.pptx").exists() and (WORK / "zbsp-adapter.pptx").stat().st_size > 0, "zbsp render writes pptx")
+    from pptx import Presentation
+    deck = Presentation(str(WORK / "zbsp-adapter.pptx"))
+    shapes = list(deck.slides[2].shapes)
+    check(any(getattr(shape, "has_table", False) for shape in shapes), "zbsp render preserves table")
+    check(any(getattr(shape, "has_chart", False) for shape in shapes), "zbsp render preserves chart")
+    check(any(int(getattr(shape.shape_type, "value", -1)) == 13 for shape in shapes), "zbsp render preserves image")
+    shape_deck = Presentation(str(WORK / "zbsp-adapter.pptx"))
+    shape_slide = shape_deck.slides[3]
+    kinds = {int(getattr(shape.shape_type, "value", -1)) for shape in shape_slide.shapes}
+    check(1 in kinds and 9 in kinds, "zbsp render preserves shapes and lines")
+    check(shape_slide.background.fill.type is not None, "zbsp render preserves background")
+
+
+def test_deck_anon1009() -> None:
+    print("[deck-anon1009]")
+    base = WORK / "anon-base.pptx"
+    created = ok({
+        "action": "create",
+        "type": "pptx",
+        "path": str(base),
+        "spec": {"slides": [{"layout": "title", "title": "Anon Aesthetic Test", "subtitle": "Office Forge"}, {"title": "Overview", "bullets": ["Alpha", "Beta", "Gamma"]}]},
+    })
+    check(created.get("slides") == 2, "anon1009 fixture created")
+    catalog = ok({"action": "deck", "operation": "catalog"})
+    by_name = {item["name"]: item for item in catalog["adapters"]}
+    check(by_name["anon1009"]["available"] is True, "anon1009 adapter is bundled and available")
+    audited = ok({"action": "deck", "operation": "audit", "path": str(base), "engine": "anon1009", "mode": "aesthetic", "args": {}})
+    check(audited.get("adapter") == "anon1009" and isinstance(audited.get("score"), int), "anon1009 audit returns a score")
+    repaired = ok({"action": "deck", "operation": "repair", "path": str(base), "engine": "anon1009", "args": {"output": "anon-beautified.pptx", "theme": "executive-navy"}})
+    check(repaired.get("adapter") == "anon1009" and repaired.get("outputPath"), "anon1009 repair reports output")
+    check((WORK / "anon-beautified.pptx").exists() and (WORK / "anon-beautified.pptx").stat().st_size > 5000, "anon1009 beautified pptx written")
+
+
+def test_deck_guizang() -> None:
+    print("[deck-guizang]")
+    catalog = ok({"action": "deck", "operation": "catalog"})
+    by_name = {item["name"]: item for item in catalog["adapters"]}
+    check(by_name["guizang"]["available"] is True, "guizang adapter is bundled and available")
+    check(by_name["guizang"]["kind"] == "skill", "guizang adapter exposes skill-backed HTML kind")
+    result = ok({
+        "action": "deck",
+        "operation": "render",
+        "path": str(WORK / "guizang-adapter.html"),
+        "engine": "guizang",
+        "spec": {
+            "title": "Guizang adapter",
+            "theme": "ikb",
+            "slides": [
+                {"layout": "title", "title": "Guizang Theme", "subtitle": "Office Forge"},
+                {"title": "Tokens", "bullets": ["Paper", "Ink", "Accent"]},
+            ],
+        },
+    })
+    check(result.get("engine") == "guizang" and result.get("type") == "html", "guizang render uses real HTML template")
+    check(result.get("slides") == 2 and result.get("template") == "template-swiss.html", "guizang render uses template-swiss")
+    html = (WORK / "guizang-adapter.html").read_text(encoding="utf-8")
+    check("Guizang Theme" in html and "canvas-card" in html and "SPEAKER_NOTES" in html, "guizang HTML includes slides and speaker notes")
+
+
+def test_deck_composer() -> None:
+    print("[deck-composer]")
+    catalog = ok({"action": "deck", "operation": "catalog"})
+    by_name = {item["name"]: item for item in catalog["adapters"]}
+    check(by_name["composer"]["available"] is True, "composer adapter is bundled and available")
+    check(by_name["composer"]["kind"] == "web_deck", "composer adapter is a web-deck adapter")
+    result = ok({
+        "action": "deck",
+        "operation": "render",
+        "path": str(WORK / "composer-deck.html"),
+        "engine": "composer",
+        "spec": {
+            "title": "Composer web deck",
+            "theme": "ocean",
+            "slides": [
+                {"layout": "title", "title": "Composer Deck", "subtitle": "Office Forge"},
+                {"title": "Blocks", "bullets": ["Alpha", "Beta"]},
+            ],
+        },
+    })
+    check(result.get("adapter") == "composer" and result.get("type") == "html", "composer render reports html adapter")
+    html = (WORK / "composer-deck.html").read_text(encoding="utf-8")
+    check("<!doctype html>" in html.lower() and "Composer Deck" in html, "composer render writes html deck")
+
+
 def test_pdf_invalid() -> None:
     print("[pdf-invalid]")
     corrupt = WORK / "corrupt.pdf"
@@ -1486,6 +1984,203 @@ def test_pdf_invalid() -> None:
     empty.write_bytes(b"")
     data = call({"action": "read", "path": str(empty), "format": "text"})
     check(not data.get("ok") and data.get("error", {}).get("code") == "INVALID_PDF", "empty PDF rejected as INVALID_PDF")
+
+
+def test_deck_template_pack() -> None:
+    print("[deck-template-pack]")
+    pack_dir = WORK / "packs" / "demo"
+    pack_dir.mkdir(parents=True, exist_ok=True)
+    (pack_dir / "template_pack.json").write_text(json.dumps({
+        "id": "demo-pack",
+        "label": "Demo Pack",
+        "version": "1.0.0",
+        "license": "MIT",
+        "themes": "themes.json",
+        "layouts": "layouts.json",
+        "templates": "templates.json",
+    }, ensure_ascii=False), encoding="utf-8")
+    (pack_dir / "themes.json").write_text(json.dumps({
+        "themes": {"forge": {"label": "Forge"}},
+    }, ensure_ascii=False), encoding="utf-8")
+    (pack_dir / "layouts.json").write_text(json.dumps({
+        "layouts": [{"id": "cover", "label": "Cover", "family": "cover"}],
+    }, ensure_ascii=False), encoding="utf-8")
+    (pack_dir / "templates.json").write_text(json.dumps({
+        "templates": [{"id": "pack-cover", "label": "Pack Cover", "theme": "forge", "slides": [
+            {"layout": "cover", "title": "Pack 加载成功", "subtitle": "Template Pack"},
+        ]}],
+    }, ensure_ascii=False), encoding="utf-8")
+    extra = {"OFFICEFORGE_TEMPLATE_PACKS": str(pack_dir)}
+    catalog = ok({"action": "deck", "operation": "catalog"}, extra)
+    pack = next((item for item in catalog["templatePacks"] if item["id"] == "demo-pack"), None)
+    check(pack is not None, "template pack catalog lists external pack")
+    check(pack and pack["themeCount"] >= 1 and pack["layoutCount"] >= 1 and pack["templateCount"] >= 1, "template pack reports asset counts")
+
+    planned = ok({
+        "action": "deck", "operation": "plan",
+        "spec": {"templatePack": "demo-pack", "template": "pack-cover"},
+    }, extra)
+    check(planned["summary"]["slides"] == 1 and planned["deck"]["slides"][0]["title"] == "Pack 加载成功", "template pack plan resolves pack template")
+
+    rendered = ok({
+        "action": "deck", "operation": "render", "path": str(WORK / "pack-deck.pptx"),
+        "engine": "legacy",
+        "spec": {"templatePack": "demo-pack", "template": "pack-cover"},
+    }, extra)
+    check(rendered["adapter"] == "legacy" and (WORK / "pack-deck.pptx").exists(), "template pack render writes pptx")
+
+
+def test_deck_builtin_packs() -> None:
+    print("[deck-builtin-packs]")
+    catalog = ok({"action": "deck", "operation": "catalog"})
+    by_id = {item["id"]: item for item in catalog["templatePacks"]}
+    check("officeforge-academic" in by_id and "officeforge-pitch" in by_id, "builtin template packs are listed")
+    check(by_id["officeforge-academic"]["templateCount"] >= 2 and by_id["officeforge-pitch"]["templateCount"] >= 2, "builtin packs report template counts")
+    planned = ok({
+        "action": "deck",
+        "operation": "plan",
+        "spec": {"templatePack": "officeforge-academic", "template": "thesis-defense"},
+    })
+    check(planned["summary"]["slides"] == 5 and planned["deck"]["slides"][0]["title"] == "学位论文答辩", "builtin academic pack resolves template")
+    rendered = ok({
+        "action": "deck",
+        "operation": "render",
+        "path": str(WORK / "builtin-pack.pptx"),
+        "engine": "legacy",
+        "spec": {"templatePack": "officeforge-pitch", "template": "product-launch"},
+    })
+    check(rendered["adapter"] == "legacy" and (WORK / "builtin-pack.pptx").exists(), "builtin pitch pack renders pptx")
+
+
+def test_deck_template_validation() -> None:
+    print("[deck template validation]")
+    result = ok({"action": "deck", "operation": "validate"})
+    check(result["valid"] is True and result["checked"] == 3, "builtin template packs validate")
+    core = next(item for item in result["packs"] if item["id"] == "officeforge-core")
+    check(core["counts"]["themes"] >= 30 and core["counts"]["layouts"] >= 30 and core["counts"]["templates"] >= 10, "core pack reports actual asset counts")
+
+    pack_dir = WORK / "packs" / "invalid-demo"
+    pack_dir.mkdir(parents=True, exist_ok=True)
+    (pack_dir / "template_pack.json").write_text(json.dumps({"packs": [{
+        "id": "demo-invalid", "label": "Demo Invalid", "version": "1.0.0",
+        "themes": "themes.json", "layouts": "layouts.json", "templates": "templates.json"
+    }]}, ensure_ascii=False), encoding="utf-8")
+    (pack_dir / "themes.json").write_text(json.dumps({"themes": [{"id": "demo", "label": "Demo"}]}, ensure_ascii=False), encoding="utf-8")
+    (pack_dir / "layouts.json").write_text(json.dumps({"layouts": [{"id": "cover", "label": "Cover", "family": "title"}]}, ensure_ascii=False), encoding="utf-8")
+    (pack_dir / "templates.json").write_text(json.dumps({"templates": [{
+        "id": "bad-template", "label": "Bad", "theme": "demo",
+        "slides": [{"layout": "missing-layout", "title": "Bad slide"}]
+    }]}, ensure_ascii=False), encoding="utf-8")
+    invalid = ok({"action": "deck", "operation": "validate", "pack": "demo-invalid"}, {"OFFICEFORGE_TEMPLATE_PACKS": str(pack_dir)})
+    check(invalid["valid"] is False, "invalid external pack is rejected")
+    codes = {item["code"] for item in invalid["packs"][0]["errors"]}
+    check("TEMPLATE_LAYOUT_UNKNOWN" in codes, "missing layout reference is reported")
+
+    missing = call({"action": "deck", "operation": "validate", "pack": "no-such-pack"})
+    check(not missing.get("ok") and missing.get("error", {}).get("code") == "TEMPLATE_PACK_NOT_FOUND", "unknown pack id is rejected")
+
+
+def test_deck_capabilities_loss_audit() -> None:
+    print("[deck capabilities / loss audit]")
+    caps = ok({"action": "deck", "operation": "capabilities"})
+    dsh = caps["dshPpt"]
+    check(dsh["counts"]["themes"] >= 24, "capabilities exposes all dsh-ppt themes")
+    check(dsh["counts"]["masters"] >= 8, "capabilities exposes all dsh-ppt masters")
+    check(dsh["counts"]["templates"] >= 20, "capabilities exposes all dsh-ppt templates")
+    check(len(caps["adapters"]) >= 5, "capabilities exposes adapter matrix")
+
+    clean = ok({"action": "deck", "operation": "lossAudit", "spec": {
+        "title": "Clean", "slides": [{"layout": "bullets", "title": "Hello", "bullets": ["one"]}]
+    }})
+    check(clean["lossless"] is True and clean["lostFeatures"] == [], "plain deck is lossless on auto")
+
+    lossy = ok({"action": "deck", "operation": "lossAudit", "engine": "composer", "spec": {
+        "title": "Table", "slides": [{"layout": "table", "title": "Data", "table": [["A", "B"], [1, 2]]}]
+    }})
+    check("tables" in lossy["lostFeatures"], "composer loss audit reports table loss")
+    check(lossy["selectedAdapter"] == "composer", "loss audit records selected adapter")
+
+
+def test_deck_import_design() -> None:
+    print("[deck import / design catalog]")
+    design = ok({"action": "deck", "operation": "designCatalog"})
+    check(len(design["anon1009"]["themes"]) >= 6, "design catalog exposes Anon1009 themes")
+    check(len(design["guizang"]["themes"]) >= 9, "design catalog exposes Guizang themes")
+    check(len(design["office"]["themes"]) >= 24, "design catalog exposes Office themes")
+
+    source = os.path.join(WORK, "import-source.pptx")
+    ok({"action": "create", "type": "pptx", "path": source, "overwrite": True, "spec": {
+        "title": "Import source", "theme": "consulting",
+        "slides": [
+            {"layout": "cover", "title": "Hello", "subtitle": "World", "comments": [{"author": "QA", "text": "check this"}]},
+            {"layout": "bullets", "title": "Points", "bullets": ["One", "Two"]},
+        ],
+    }})
+    result = ok({"action": "deck", "operation": "import", "path": source, "args": {}})
+    check(result["mode"] == "import" and len(result["deck"]["slides"]) == 2, "import returns Deck IR")
+    check(result["fidelity"]["counts"]["comments"] >= 1, "import preserves comments")
+    check(any(slide.get("comments") or any(block.get("type") == "comments" for block in slide.get("blocks", [])) for slide in result["deck"]["slides"]), "import preserves comment placement")
+
+
+def test_deck_v306() -> None:
+    print("[deck 4-6 design / advanced import / roundtrip]")
+    wav = WORK / "beep.wav"
+    with wave.open(str(wav), "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(8000)
+        handle.writeframes(b"\x00\x00" * 800)
+
+    anon_spec = {
+        "title": "Anon create",
+        "theme": "executive-navy",
+        "slides": [{"layout": "bullets", "title": "Anon", "bullets": ["One", "Two"]}],
+    }
+    anon = ok({
+        "action": "deck", "operation": "render", "path": str(WORK / "anon-create.pptx"),
+        "engine": "anon1009", "overwrite": True, "spec": anon_spec,
+    })
+    check(anon.get("adapter") == "anon1009", "anon1009 create renders through the adapter")
+    check("design" not in anon.get("adapterDecision", {}).get("unsupportedFeatures", []), "anon1009 create accepts design features")
+    check((WORK / "anon-create.pptx").stat().st_size > 5000, "anon1009 create writes a deck")
+
+    advanced_spec = {
+        "title": "Advanced",
+        "theme": "consulting",
+        "master": {"footer": "Office Forge"},
+        "slides": [{
+            "layout": "content", "title": "Advanced", "bullets": ["One"],
+            "smartArt": {"items": ["Plan", "Build", "Ship"], "layout": "horizontal"},
+            "transition": {"effect": "morph", "duration": 1.2},
+            "animation": {"effect": "fade", "shapeId": 2},
+            "media": {"kind": "audio", "path": str(wav), "autoplay": True},
+            "comments": [{"author": "QA", "text": "check"}],
+        }],
+    }
+    advanced_path = WORK / "advanced-4-6.pptx"
+    advanced = ok({
+        "action": "deck", "operation": "render", "path": str(advanced_path),
+        "engine": "legacy", "overwrite": True, "spec": advanced_spec,
+    })
+    check(advanced.get("adapter") == "legacy" and advanced_path.stat().st_size > 5000, "advanced Office objects render through legacy")
+
+    imported = ok({"action": "deck", "operation": "import", "path": str(advanced_path), "args": {}})
+    counts = imported["fidelity"]["counts"]
+    check(counts.get("media", 0) >= 1 and counts.get("comments", 0) >= 1, "import preserves media and comments")
+    check(counts.get("transitions", 0) >= 1 and counts.get("animations", 0) >= 1, "import records transitions and animations")
+    check(any(block.get("type") == "media" for slide in imported["deck"]["slides"] for block in slide.get("blocks", [])), "import emits media blocks")
+
+    roundtrip_path = WORK / "advanced-roundtrip.pptx"
+    roundtrip = ok({
+        "action": "deck", "operation": "render", "path": str(roundtrip_path),
+        "engine": "auto", "overwrite": True, "spec": imported["deck"],
+    })
+    check(roundtrip.get("slides") == 1 and roundtrip_path.stat().st_size > 5000, "imported Deck IR roundtrips to PPTX")
+
+    loss = ok({"action": "deck", "operation": "lossAudit", "engine": "auto", "spec": advanced_spec})
+    required = set(loss.get("requiredFeatures") or [])
+    check({"smartart", "animations", "morph", "media", "comments"}.issubset(required), "loss audit sees advanced Office features")
+    check(loss.get("selectedAdapter") == "legacy" and loss.get("lossless") is True, "loss audit routes advanced objects to legacy without loss")
 
 
 def main() -> int:
@@ -1511,6 +2206,24 @@ def main() -> int:
         test_xlsx_v10()
         test_pptx_v08()
         test_pptx_deepening()
+        test_ppt_v015()
+        test_deck_v017()
+        test_deck_v018()
+        test_deck_storyboard()
+        test_deck_v100()
+        test_deck_adapter_auto()
+        test_deck_zbsp()
+        test_deck_anon1009()
+        test_deck_guizang()
+        test_deck_composer()
+        test_deck_template_pack()
+        test_deck_builtin_packs()
+        test_deck_template_validation()
+        test_deck_capabilities_loss_audit()
+        test_deck_import_design()
+        test_deck_v306()
+        test_deck_edit()
+        test_deck_verify()
         test_document_properties()
         test_docx_audit()
         test_xlsx_audit()
@@ -1521,6 +2234,7 @@ def main() -> int:
         test_pdf_invalid()
         test_schema_migration_v05()
         test_native_v05()
+        test_native_update_fields()
         test_convert_v05()
         test_batch()
         test_copy()

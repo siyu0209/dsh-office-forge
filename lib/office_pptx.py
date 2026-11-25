@@ -68,19 +68,22 @@ def _load_themes() -> dict[str, dict[str, Any]]:
     The resource file is data-only; a malformed or absent file falls back to
     the built-in minimum so a damaged installation cannot stop the plugin.
     """
-    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "resources", "themes.json")
-    try:
-        import json
-        with open(path, "r", encoding="utf-8") as handle:
-            payload = json.load(handle)
-        themes = payload.get("themes") if isinstance(payload, dict) else None
-        result = {}
-        for item in themes or []:
-            if isinstance(item, dict) and item.get("id"):
-                result[str(item["id"])] = dict(item)
-        return result or dict(_THEMES_FALLBACK)
-    except Exception:
-        return dict(_THEMES_FALLBACK)
+    import json
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    result: dict[str, dict[str, Any]] = {}
+    for name in ("themes.json", "guizang-themes.json"):
+        path = os.path.join(root, "resources", name)
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+            themes = payload.get("themes") if isinstance(payload, dict) else None
+            for item in themes or []:
+                if isinstance(item, dict) and item.get("id"):
+                    result[str(item["id"])] = dict(item)
+        except Exception:
+            continue
+    return result or dict(_THEMES_FALLBACK)
 
 
 _THEMES = _load_themes()
@@ -894,8 +897,11 @@ def _populate_slide(slide: Any, spec: Mapping[str, Any], workspace: str, feature
         _add_animation(slide, spec["animation"], features)
     if spec.get("smartArt") is not None:
         _add_smartart(slide, spec["smartArt"], features)
-    if spec.get("media") is not None:
-        _add_media(slide, spec["media"], features)
+    media_value = spec.get("media")
+    if media_value is not None:
+        media_items = media_value if isinstance(media_value, list) else [media_value]
+        for media_item in media_items:
+            _add_media(slide, media_item, features)
     notes = spec.get("notes")
     if notes is not None:
         slide.notes_slide.notes_text_frame.text = scalar_text(notes)
@@ -912,11 +918,15 @@ def _add_slide(presentation: Any, spec: Mapping[str, Any], workspace: str, featu
         layout = presentation.slide_layouts[min(5, len(presentation.slide_layouts) - 1)]
         slide = presentation.slides.add_slide(layout)
         _apply_catalog_layout(slide, spec, _LAYOUT_CATALOG[layout_name], workspace, features)
-        return slide
-    layout_index = _LAYOUTS.get(layout_name, 1)
-    layout = presentation.slide_layouts[min(layout_index, len(presentation.slide_layouts) - 1)]
-    slide = presentation.slides.add_slide(layout)
-    _populate_slide(slide, spec, workspace, features)
+    else:
+        layout_index = _LAYOUTS.get(layout_name, 1)
+        layout = presentation.slide_layouts[min(layout_index, len(presentation.slide_layouts) - 1)]
+        slide = presentation.slides.add_slide(layout)
+        _populate_slide(slide, spec, workspace, features)
+    comments = spec.get("comments") if isinstance(spec, Mapping) else None
+    if comments is not None:
+        for comment in require_list(comments, "comments", max_items=100):
+            _add_comment(slide, comment, features, presentation)
     return slide
 
 
@@ -1452,6 +1462,90 @@ def _deck_check(presentation: Any, args: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _aesthetic_report(presentation: Any, args: Mapping[str, Any]) -> dict[str, Any]:
+    base = _deck_check(presentation, args)
+    issues = list(base["issues"])
+    small_titles: list[int] = []
+    for index, slide in enumerate(presentation.slides, start=1):
+        title_shape = slide.shapes.title
+        if title_shape is None or not title_shape.has_text_frame:
+            continue
+        sizes = []
+        for paragraph in title_shape.text_frame.paragraphs:
+            for run in paragraph.runs:
+                if run.font.size is not None:
+                    sizes.append(float(run.font.size.pt))
+        if sizes and min(sizes) < 24:
+            small_titles.append(index)
+            issues.append({"code": "small_title", "severity": "medium", "slide": index, "message": "title is smaller than 24 pt"})
+    summary: dict[str, int] = {}
+    for issue in issues:
+        summary[issue["code"]] = summary.get(issue["code"], 0) + 1
+    high = sum(1 for issue in issues if issue["severity"] == "high")
+    medium = sum(1 for issue in issues if issue["severity"] == "medium")
+    low = sum(1 for issue in issues if issue["severity"] == "low")
+    score = max(0, 100 - high * 10 - medium * 6 - low * 3)
+    return {
+        "type": "pptx",
+        "mode": "aesthetic",
+        "score": score,
+        "issueCount": len(issues),
+        "summary": summary,
+        "issues": issues[: max(1, min(int(args.get("maxIssues") or 200), 1000))],
+        "slideCount": len(presentation.slides),
+        "design": {"smallTitleSlides": small_titles},
+        "truncated": len(issues) > max(1, min(int(args.get("maxIssues") or 200), 1000)),
+    }
+
+
+def beautify_pptx(path: str, args: Mapping[str, Any], limits: Mapping[str, Any], workspace: str, features: Any = None) -> dict[str, Any]:
+    require_feature(features, "ppt", "beautify", "PowerPoint beautify")
+    presentation = Presentation(path)
+    before = _deck_check(presentation, args)
+    theme = _theme_name(args.get("theme") or "forge")
+    _apply_theme(presentation, theme, features)
+    fixes = 0
+    for slide in presentation.slides:
+        title_shape = slide.shapes.title
+        for shape in slide.shapes:
+            if not shape.has_text_frame:
+                continue
+            is_title = title_shape is not None and shape == title_shape
+            for paragraph in shape.text_frame.paragraphs:
+                if not paragraph.text.strip():
+                    continue
+                paragraph.space_after = Pt(8 if is_title else 4)
+                for run in paragraph.runs:
+                    if is_title:
+                        if run.font.bold is not True:
+                            run.font.bold = True
+                            fixes += 1
+                        if run.font.size is None or run.font.size < Pt(28):
+                            run.font.size = Pt(32)
+                            fixes += 1
+                    elif run.font.size is None or run.font.size < Pt(14):
+                        run.font.size = Pt(16)
+                        fixes += 1
+    after = _deck_check(presentation, args)
+    output = str(args.get("output") or path)
+    target = output if os.path.isabs(output) else os.path.join(workspace, output)
+    target = os.path.abspath(target)
+    assert_inside(target, workspace, "output")
+    overwrite = bool(args.get("overwrite", True))
+    backup = bool(args.get("backup", True))
+    size, backup_path = atomic_save(target, lambda temp: presentation.save(temp), overwrite=overwrite, max_bytes=int(limits["maxOutputBytes"]), make_backup=backup)
+    return {
+        "type": "pptx",
+        "path": target,
+        "bytes": size,
+        "beforeScore": before["score"],
+        "afterScore": after["score"],
+        "fixes": fixes,
+        "theme": theme,
+        "backupPath": backup_path,
+    }
+
+
 def audit_pptx(path: str, mode: str, args: Mapping[str, Any]) -> dict[str, Any]:
     if mode == "themes":
         return {"type": "pptx", "mode": "themes", "themes": [{"name": key, **value} for key, value in _THEMES.items()]}
@@ -1471,4 +1565,6 @@ def audit_pptx(path: str, mode: str, args: Mapping[str, Any]) -> dict[str, Any]:
         }
     if mode == "deck":
         return _deck_check(Presentation(path), args)
-    raise EngineError("UNSUPPORTED_OPERATION", f"unsupported pptx audit mode: {mode}", {"allowed": ["deck", "profile", "themes", "layouts", "templates"]})
+    if mode == "aesthetic":
+        return _aesthetic_report(Presentation(path), args)
+    raise EngineError("UNSUPPORTED_OPERATION", f"unsupported pptx audit mode: {mode}", {"allowed": ["deck", "aesthetic", "profile", "themes", "layouts", "templates"]})

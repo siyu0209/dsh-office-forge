@@ -213,6 +213,35 @@ def _accept_revisions(payload: dict[str, Any]) -> dict[str, Any]:
     return {"type": "docx", "path": target, "bytes": os.path.getsize(target), "backend": "com", "accepted": True}
 
 
+def _update_fields(payload: dict[str, Any]) -> dict[str, Any]:
+    source = os.path.abspath(str(payload["source"]))
+    target = os.path.abspath(str(payload["target"]))
+    application = _dispatch("update-fields", ".docx")
+    try:
+        document = application.Documents.Open(source, ReadOnly=False)
+        try:
+            fields = int(document.Fields.Count)
+            document.Fields.Update()
+            tables_of_contents = document.TablesOfContents
+            toc_count = int(tables_of_contents.Count)
+            for index in range(1, toc_count + 1):
+                tables_of_contents.Item(index).Update()
+            document.SaveAs2(target, FileFormat=16)
+        finally:
+            document.Close(False)
+    finally:
+        _safe_quit(application)
+    return {
+        "type": "docx",
+        "path": target,
+        "bytes": os.path.getsize(target),
+        "backend": "com",
+        "fieldsUpdated": fields,
+        "tocUpdated": toc_count,
+        "updated": True,
+    }
+
+
 def _recalculate(payload: dict[str, Any]) -> dict[str, Any]:
     source = os.path.abspath(str(payload["source"]))
     target = os.path.abspath(str(payload["target"]))
@@ -332,6 +361,7 @@ _ACTIONS = {
     "convert": _convert,
     "exportPdf": _export_pdf,
     "acceptRevisions": _accept_revisions,
+    "updateFields": _update_fields,
     "recalculate": _recalculate,
     "pivot": _pivot,
     "smartArt": _smart_art,

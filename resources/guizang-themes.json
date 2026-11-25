@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "source": "op7418/guizang-ppt-skill (MIT) — palette values from themes.md and themes-swiss.md",
+  "themes": [
+    {
+      "id": "guizang-ink-classic",
+      "label": "歸藏 · 墨水经典",
+      "family": "magazine",
+      "background": "F1EFEA",
+      "panel": "E7E3DA",
+      "titleColor": "0A0A0B",
+      "bodyColor": "0A0A0B",
+      "muted": "6B6862",
+      "accent": "111111",
+      "accent2": "111111",
+      "font": "Microsoft YaHei"
+    },
+    {
+      "id": "guizang-indigo-porcelain",
+      "label": "歸藏 · 靛蓝瓷",
+      "family": "magazine",
+      "background": "F1F3F5",
+      "panel": "E2E7EC",
+      "titleColor": "0A1F3D",
+      "bodyColor": "0A1F3D",
+      "muted": "5E7187",
+      "accent": "315D93",
+      "accent2": "315D93",
+      "font": "Microsoft YaHei"
+    },
+    {
+      "id": "guizang-forest-ink",
+      "label": "歸藏 · 森林墨",
+      "family": "magazine",
+      "background": "F5F1E8",
+      "panel": "E8E1D2",
+      "titleColor": "1A2E1F",
+      "bodyColor": "1A2E1F",
+      "muted": "5E7563",
+      "accent": "2E6B4F",
+      "accent2": "2E6B4F",
+      "font": "Microsoft YaHei"
+    },
+    {
+      "id": "guizang-kraft-paper",
+      "label": "歸藏 · 牛皮纸",
+      "family": "magazine",
+      "background": "EEDFC7",
+      "panel": "E3D0B2",
+      "titleColor": "2A1E13",
+      "bodyColor": "2A1E13",
+      "muted": "73614D",
+      "accent": "9B5A2E",
+      "accent2": "804212",
+      "font": "Microsoft YaHei"
+    },
+    {
+      "id": "guizang-dune",
+      "label": "歸藏 · 沙丘",
+      "family": "magazine",
+      "background": "F0E6D2",
+      "panel": "E4D5BA",
+      "titleColor": "1F1A14",
+      "bodyColor": "1F1A14",
+      "muted": "746B5E",
+      "accent": "8F7650",
+      "accent2": "705833",
+      "font": "Microsoft YaHei"
+    },
+    {
+      "id": "guizang-ikb",
+      "label": "歸藏 · 克莱因蓝",
+      "family": "swiss",
+      "background": "FAFAF8",
+      "panel": "F0F0EE",
+      "titleColor": "0A0A0A",
+      "bodyColor": "0A0A0A",
+      "muted": "737373",
+      "accent": "002FA7",
+      "accent2": "002FA7",
+      "font": "Microsoft YaHei"
+    },
+    {
+      "id": "guizang-lemon",
+      "label": "歸藏 · 柠檬黄",
+      "family": "swiss",
+      "background": "FAFAF8",
+      "panel": "F0F0EE",
+      "titleColor": "0A0A0A",
+      "bodyColor": "0A0A0A",
+      "muted": "737373",
+      "accent": "FFD500",
+      "accent2": "7A5F00",
+      "font": "Microsoft YaHei"
+    },
+    {
+      "id": "guizang-lemon-green",
+      "label": "歸藏 · 柠檬绿",
+      "family": "swiss",
+      "background": "FAFAF8",
+      "panel": "F0F0EE",
+      "titleColor": "0A0A0A",
+      "bodyColor": "0A0A0A",
+      "muted": "737373",
+      "accent": "C5E803",
+      "accent2": "4A6400",
+      "font": "Microsoft YaHei"
+    },
+    {
+      "id": "guizang-safety-orange",
+      "label": "歸藏 · 安全橙",
+      "family": "swiss",
+      "background": "FAFAF8",
+      "panel": "F0F0EE",
+      "titleColor": "0A0A0A",
+      "bodyColor": "0A0A0A",
+      "muted": "737373",
+      "accent": "FF6B35",
+      "accent2": "C2410C",
+      "font": "Microsoft YaHei"
+    }
+  ]
+}

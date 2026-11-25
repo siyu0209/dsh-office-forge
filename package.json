@@ -1,7 +1,7 @@
 {
   "name": "dsh-office-forge",
-  "version": "0.14.0",
-  "description": "Office document toolkit for DSH with Word citations/columns/watermarks/content controls, Excel native features, PowerPoint layout/template libraries with comments, media, master and morph, full file-level PDF tools, optional OCR diagnostics, and a one-click plugin-page environment check.",
+  "version": "3.5.9",
+  "description": "Office Forge — configurable Word/Excel/PowerPoint/PDF toolkit with Deck IR, pluggable PPT adapters, real Guizang HTML decks, mandatory PPT intake, and Template Pack validation.",
   "license": "MIT",
   "type": "module",
   "main": "lib/index.js",
@@ -12,7 +12,8 @@
     "./package.json": "./package.json",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./locale/*.json": "./locale/*.json",
-    "./icon": "./icon.svg"
+    "./icon": "./icon.svg",
+    "./skills/*": "./skills/*"
   },
   "dsh": {
     "bundle": {
@@ -24,6 +25,7 @@
   },
   "files": [
     "lib/*.js",
+    "lib/*.mjs",
     "lib/*.py",
     "lib/vendor/**",
     "locale/*.json",
@@ -32,13 +34,18 @@
     "docs/*.md",
     "benchmarks/*.py",
     "benchmarks/baseline.json",
+    "scripts/*.py",
     "README.md",
     "README.zh.md",
     "LICENSE",
-    "resources/*.json"
+    "resources/*.json",
+    "resources/packs/**",
+    "skills"
   ],
   "dependencies": {
-    "@deepseek-ai/schemastery": "~3.19.0"
+    "@deepseek-ai/schemastery": "~3.19.0",
+    "dsh-ppt": "0.33.0",
+    "dsh-ppt-studio": "1.2.7"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-tools": "0.2.2-rc.5"

@@ -18,11 +18,15 @@ import traceback
 from typing import Any, Mapping
 
 import office_backends
+import office_deck
 import office_docx
 import office_migrations
 import office_pdf
 import office_pdf_tools
+import office_ppt_anon
+import office_ppt_backends
 import office_pptx
+import office_webdeck
 import office_xlsx
 from office_common import EngineError, assert_inside, jsonable, read_data_file, require_feature
 
@@ -42,6 +46,7 @@ _ALLOWED = {
     "xlsx": (".xlsx", ".xlsm"),
     "pptx": (".pptx", ".pptm"),
     "pdf": (".pdf",),
+    "html": (".html",),
 }
 
 
@@ -97,9 +102,9 @@ def probe() -> dict[str, Any]:
         "capabilities": {
             "docx": {"read": True, "create": True, "edit": True, "template": True, "loops": True, "images": True, "hyperlinks": True, "toc": True, "captions": True, "styles": True, "fields": True, "comments": True, "revisions": True, "mailMerge": True, "footnotes": True, "bookmarks": True, "crossReferences": True, "citations": True, "columns": True, "watermark": True, "contentControls": True, "dotx": True, "audit": ["health", "profile"]},
             "xlsx": {"read": True, "create": True, "edit": True, "template": True, "loops": True, "charts": True, "comboCharts": True, "conditionalFormatting": True, "dataValidation": True, "comments": True, "mergedCells": True, "images": True, "formulas": True, "arrayFormulas": True, "dataTools": True, "pivots": True, "tables": True, "protection": True, "import": ["csv", "tsv", "json"], "audit": ["health", "profile", "insight", "diff"]},
-            "pptx": {"read": True, "create": True, "edit": True, "template": True, "loops": False, "charts": True, "images": True, "transitions": True, "shapes": True, "textBoxes": True, "connectors": True, "animations": True, "smartart": True, "notes": True, "sections": True, "comments": True, "media": True, "master": True, "layouts": sorted(office_pptx._LAYOUT_CATALOG), "templates": sorted(office_pptx._TEMPLATE_CATALOG), "morph": True, "audit": ["deck", "profile", "themes", "layouts", "templates"], "themes": sorted(office_pptx._THEMES)},
+            "pptx": {"read": True, "create": True, "edit": True, "template": True, "loops": False, "charts": True, "images": True, "transitions": True, "shapes": True, "textBoxes": True, "connectors": True, "animations": True, "smartart": True, "notes": True, "sections": True, "comments": True, "media": True, "master": True, "layouts": sorted(office_pptx._LAYOUT_CATALOG), "templates": sorted(office_pptx._TEMPLATE_CATALOG), "morph": True, "beautify": True, "aesthetic": True, "web": True, "deck": True, "deckVerify": True, "deckImport": True, "designCatalog": True, "deckSchema": 1, "engines": ["auto"] + [entry["name"] for entry in office_deck.catalog()["adapters"]], "audit": ["deck", "aesthetic", "profile", "themes", "layouts", "templates"], "themes": sorted(office_pptx._THEMES)},
             "pdf": {"read": True, "exportViaOfficeKit": True, "toolkit": ["merge", "split", "rotate", "watermark", "pageNumbers", "formFields", "fillForm", "extractImages", "ocr", "encrypt", "decrypt"]},
-            "native": {"backend": "win32com", "operations": ["convert", "exportPdf", "acceptRevisions", "recalculate", "pivot", "smartArt"]},
+            "native": {"backend": "win32com", "operations": ["convert", "exportPdf", "acceptRevisions", "updateFields", "recalculate", "pivot", "smartArt"]},
         },
         "backends": office_backends.status(),
     }
@@ -130,6 +135,8 @@ def _read(payload: Mapping[str, Any]) -> Any:
         return office_xlsx.read_xlsx(path, args, LIMITS)
     if kind == "pdf":
         return office_pdf.read_pdf(path, args, LIMITS)
+    if kind == "html":
+        raise EngineError("UNSUPPORTED_OPERATION", "HTML decks are write-only in Office Forge", {"supported": ["docx", "xlsx", "pptx", "pdf"]})
     return office_pptx.read_pptx(path, args, LIMITS)
 
 
@@ -147,15 +154,18 @@ def _create(payload: Mapping[str, Any]) -> Any:
         raise EngineError("INVALID_ARGUMENT", "spec must be a JSON object")
     if kind == "pdf":
         raise EngineError("UNSUPPORTED_OPERATION", "PDF is read-only in Office Forge")
-    spec = office_migrations.migrate_spec(kind, spec, payload.get("schemaVersion"))
     overwrite = bool(payload.get("overwrite", False))
     features = payload.get("features")
-    if kind == "docx":
-        result = office_docx.create_docx(path, spec, LIMITS, overwrite, _workspace(), features)
-    elif kind == "xlsx":
-        result = office_xlsx.create_xlsx(path, spec, LIMITS, overwrite, _workspace(), features)
+    if kind == "html":
+        result = office_webdeck.create_html_deck(path, spec, LIMITS, overwrite, _workspace(), features, str(payload.get("engine") or "webdeck"))
     else:
-        result = office_pptx.create_pptx(path, spec, LIMITS, overwrite, _workspace(), features)
+        spec = office_migrations.migrate_spec(kind, spec, payload.get("schemaVersion"))
+        if kind == "docx":
+            result = office_docx.create_docx(path, spec, LIMITS, overwrite, _workspace(), features)
+        elif kind == "xlsx":
+            result = office_xlsx.create_xlsx(path, spec, LIMITS, overwrite, _workspace(), features)
+        else:
+            result = office_ppt_backends.backend_for(payload.get("pptxEngine"), spec).create(path, spec, LIMITS, overwrite, _workspace(), features)
     result["schemaVersion"] = office_migrations.CURRENT_SCHEMA_VERSION
     if "migratedFrom" in spec:
         result["migratedFrom"] = spec["migratedFrom"]
@@ -171,12 +181,14 @@ def _edit(payload: Mapping[str, Any]) -> Any:
         raise EngineError("INVALID_ARGUMENT", "args must be a JSON object")
     if kind == "pdf":
         raise EngineError("UNSUPPORTED_OPERATION", "PDF is read-only in Office Forge")
+    if kind == "html":
+        raise EngineError("UNSUPPORTED_OPERATION", "HTML decks are write-only in Office Forge")
     features = payload.get("features")
     if kind == "docx":
         return office_docx.edit_docx(path, args, LIMITS, _workspace(), features)
     if kind == "xlsx":
         return office_xlsx.edit_xlsx(path, args, LIMITS, _workspace(), features)
-    return office_pptx.edit_pptx(path, args, LIMITS, _workspace(), features)
+    return office_ppt_backends.backend_for(payload.get("pptxEngine"), None).edit(path, args, LIMITS, _workspace(), features)
 
 
 def _audit(payload: Mapping[str, Any]) -> Any:
@@ -315,10 +327,150 @@ def _native(payload: Mapping[str, Any]) -> Any:
     timeout = int(payload.get("timeout") or 120)
     if operation == "exportpdf":
         return office_backends.export_pdf(source, target, _workspace(), timeout)
-    if operation not in {"convert", "acceptrevisions", "recalculate", "pivot", "smartart"}:
-        raise EngineError("UNSUPPORTED_OPERATION", f"unsupported native operation: {operation or '(empty)'}", {"allowed": ["convert", "exportPdf", "acceptRevisions", "recalculate", "pivot", "smartArt"]})
-    action = {"acceptrevisions": "acceptRevisions", "smartart": "smartArt"}.get(operation, operation)
+    if operation not in {"convert", "acceptrevisions", "updatefields", "recalculate", "pivot", "smartart"}:
+        raise EngineError("UNSUPPORTED_OPERATION", f"unsupported native operation: {operation or '(empty)'}", {"allowed": ["convert", "exportPdf", "acceptRevisions", "updateFields", "recalculate", "pivot", "smartArt"]})
+    action = {"acceptrevisions": "acceptRevisions", "updatefields": "updateFields", "smartart": "smartArt"}.get(operation, operation)
     return office_backends.run_com(action, {"source": source, "target": target, "spec": payload.get("spec") or {}}, _workspace(), timeout)
+
+
+_ANON_THEMES = {
+    "executive-navy", "minimal-ivory", "tech-obsidian",
+    "academic-emerald", "editorial-terracotta", "morandi-slate",
+}
+_ANON_THEME_ALIASES = {
+    "forge": "executive-navy",
+    "ocean": "tech-obsidian",
+    "consulting": "executive-navy",
+    "academic": "academic-emerald",
+    "tech": "tech-obsidian",
+    "minimal": "minimal-ivory",
+    "editorial": "editorial-terracotta",
+    "morandi": "morandi-slate",
+    "swiss": "minimal-ivory",
+}
+
+
+def _anon_theme(value: Any) -> str:
+    name = str(value or "executive-navy").strip()
+    if name in _ANON_THEMES:
+        return name
+    return _ANON_THEME_ALIASES.get(name, "executive-navy")
+
+
+def _beautify(payload: Mapping[str, Any]) -> Any:
+    path = _checked(payload.get("path"), "path")
+    kind = _infer_type(path, payload.get("type"))
+    if kind != "pptx":
+        raise EngineError("UNSUPPORTED_OPERATION", "beautify is only available for pptx", {"supported": ["pptx"]})
+    office_common_stat(path)
+    require_feature(payload.get("features"), "ppt", "beautify", "PowerPoint beautify")
+    args = payload.get("args") if isinstance(payload.get("args"), Mapping) else {}
+    if payload.get("theme") and "theme" not in args:
+        args = dict(args)
+        args["theme"] = payload.get("theme")
+    engine = str(payload.get("engine") or payload.get("beautifyEngine") or "builtin").lower()
+    if engine in ("anon1009", "anon", "auto"):
+        args = dict(args)
+        args["theme"] = _anon_theme(args.get("theme") or payload.get("theme"))
+        args.setdefault("output", path)
+        return office_ppt_anon.beautify_anon(path, args, LIMITS, _workspace(), payload.get("features"))
+    return office_pptx.beautify_pptx(path, args, LIMITS, _workspace(), payload.get("features"))
+
+
+def _webdeck(payload: Mapping[str, Any]) -> Any:
+    path = _checked(payload.get("path"), "path")
+    kind = _infer_type(path, payload.get("type"))
+    if kind != "html":
+        raise EngineError("UNSUPPORTED_OPERATION", "webdeck output requires an .html path", {"supported": ["html"]})
+    spec = payload.get("spec")
+    if not isinstance(spec, Mapping):
+        raise EngineError("INVALID_ARGUMENT", "spec must be a JSON object")
+    return office_webdeck.create_html_deck(path, spec, LIMITS, bool(payload.get("overwrite", False)), _workspace(), payload.get("features"), str(payload.get("engine") or "webdeck"))
+
+
+def _deck(payload: Mapping[str, Any]) -> Any:
+    """Deck IR orchestration: plan/render/audit/repair/catalog/web."""
+    operation = str(payload.get("operation") or "plan").lower()
+    features = payload.get("features")
+    if operation == "catalog":
+        return office_deck.catalog()
+    if operation == "capabilities":
+        return office_deck.capabilities()
+    if operation == "designcatalog":
+        return office_deck.design_catalog()
+    if operation == "import":
+        source = _checked(payload.get("path"), "path")
+        return office_deck.import_pptx(source, _workspace(), LIMITS, payload.get("args") if isinstance(payload.get("args"), Mapping) else {})
+    if operation == "edit":
+        source = _checked(payload.get("path"), "path") if payload.get("path") else None
+        output = _checked(payload.get("output"), "output")
+        if _infer_type(output, "pptx") != "pptx":
+            raise EngineError("UNSUPPORTED_OPERATION", "deck edit output requires a .pptx path", {"supported": ["pptx"]})
+        if not source and payload.get("spec") is None:
+            raise EngineError("INVALID_ARGUMENT", "deck edit requires path or spec")
+        return office_deck.edit_deck(
+            source,
+            output,
+            payload.get("spec"),
+            payload.get("operations"),
+            LIMITS,
+            bool(payload.get("overwrite", False)),
+            _workspace(),
+            features,
+            payload.get("engine") or payload.get("pptxEngine") or "auto",
+        )
+    if operation == "lossaudit":
+        return office_deck.loss_audit(payload.get("spec"), payload.get("engine") or "auto")
+    if operation == "validate":
+        return office_deck.validate_template_pack(payload.get("pack") or payload.get("packId"))
+    if operation == "plan":
+        return office_deck.plan(payload.get("spec"))
+    if operation == "storyboard":
+        return office_deck.storyboard(payload.get("spec"), payload.get("format") or "json")
+    if operation == "web":
+        path = _checked(payload.get("path"), "path")
+        kind = _infer_type(path, "html")
+        if kind != "html":
+            raise EngineError("UNSUPPORTED_OPERATION", "deck web output requires an .html path", {"supported": ["html"]})
+        return office_deck.render_html(path, payload.get("spec"), LIMITS, bool(payload.get("overwrite", False)), _workspace(), features, payload.get("engine") or "webdeck")
+    path = _checked(payload.get("path"), "path")
+    kind = _infer_type(path, payload.get("type"))
+    if kind == "html":
+        if operation != "render":
+            raise EngineError("UNSUPPORTED_OPERATION", f"deck {operation} requires a .pptx path", {"supported": ["pptx"]})
+        return office_deck.render(
+            path,
+            payload.get("spec"),
+            LIMITS,
+            bool(payload.get("overwrite", False)),
+            _workspace(),
+            features,
+            payload.get("engine") or payload.get("pptxEngine") or "auto",
+        )
+    if kind != "pptx":
+        raise EngineError("UNSUPPORTED_OPERATION", f"deck {operation} requires a .pptx path", {"supported": ["pptx"]})
+    if operation == "verify":
+        return office_deck.verify(path, payload.get("spec"), payload.get("args") if isinstance(payload.get("args"), Mapping) else {})
+    if operation == "render":
+        return office_deck.render(
+            path,
+            payload.get("spec"),
+            LIMITS,
+            bool(payload.get("overwrite", False)),
+            _workspace(),
+            features,
+            payload.get("engine") or payload.get("pptxEngine") or "auto",
+        )
+    office_common_stat(path)
+    args = payload.get("args") if isinstance(payload.get("args"), Mapping) else {}
+    if operation == "audit":
+        return office_deck.audit(path, str(payload.get("mode") or "deck"), args, features, payload.get("engine") or "auto")
+    if operation == "repair":
+        if payload.get("theme") and "theme" not in args:
+            args = dict(args)
+            args["theme"] = payload.get("theme")
+        return office_deck.repair(path, args, LIMITS, _workspace(), features, payload.get("engine") or "auto")
+    raise EngineError("UNSUPPORTED_OPERATION", f"unsupported deck operation: {operation}", {"allowed": ["plan", "storyboard", "render", "audit", "repair", "catalog", "capabilities", "designCatalog", "lossAudit", "web", "validate", "verify", "import"]})
 
 
 def _convert(payload: Mapping[str, Any]) -> Any:
@@ -354,11 +506,17 @@ def _dispatch(payload: Mapping[str, Any]) -> Any:
         return _pdfop(payload)
     if action == "native":
         return _native(payload)
+    if action == "beautify":
+        return _beautify(payload)
+    if action == "webdeck":
+        return _webdeck(payload)
+    if action == "deck":
+        return _deck(payload)
     if action == "doctor":
         return doctor()
     if action == "probe":
         return probe()
-    raise EngineError("UNSUPPORTED_OPERATION", f"unsupported engine action: {action or '(empty)'}", {"allowed": ["read", "create", "edit", "audit", "template", "batch", "copy", "convert", "pdfop", "native", "doctor", "probe"]})
+    raise EngineError("UNSUPPORTED_OPERATION", f"unsupported engine action: {action or '(empty)'}", {"allowed": ["read", "create", "edit", "audit", "template", "batch", "copy", "convert", "pdfop", "native", "beautify", "webdeck", "deck", "doctor", "probe"]})
 
 
 def _entry() -> dict[str, Any]:

@@ -7,7 +7,7 @@
 | 项目 | 结论 |
 |---|---|
 | `ToolsService.register(definition)` | 返回 exact disposer；插件在 `ctx.effect` 中保存并在卸载时调用。 |
-| `defineTool` 参数/输出 schema | 十三个工具的 `parameters` 与 `output.schema` 均通过真实 `assertSupportedJsonSchema`；输出 schema 根级不使用 `required`。 |
+| `defineTool` 参数/输出 schema | 十六个工具的 `parameters` 与 `output.schema` 均通过真实 `assertSupportedJsonSchema`；输出 schema 根级不使用 `required`。 |
 | `dsh.bundle.patch` | `package.json` 使用字符串 `./cordis.patch.yml`，`loadOverlayPatches` 解析结果为单个 `insert` entry。 |
 | `officeKit` 导出 | 使用 `subagents.rootOf(agent).session.id` 作为输出 owner；源文件转换前后校验 `stat.version`；远程 workspace 不可映射时返回 `OFFICEKIT_REMOTE_WORKSPACE`。 |
 | 配置异常 | `normalizeConfig()` 捕获非法 profile 配置并回退 `Config({})`，不会阻断激活。 |
@@ -15,9 +15,9 @@
 
 ## 2. 工具命名空间
 
-Office Forge 只注册以下十三个工具：
+Office Forge 只注册以下十六个工具：
 
-`officeforge_read`、`officeforge_create`、`officeforge_edit`、`officeforge_template`、`officeforge_audit`、`officeforge_doctor`、`officeforge_batch`、`officeforge_export`、`officeforge_convert`、`officeforge_pdf`、`officeforge_native`、`officeforge_preview`、`officeforge_recalculate`。
+`officeforge_read`、`officeforge_create`、`officeforge_edit`、`officeforge_template`、`officeforge_audit`、`officeforge_beautify`、`officeforge_web`、`officeforge_deck`、`officeforge_doctor`、`officeforge_batch`、`officeforge_export`、`officeforge_convert`、`officeforge_pdf`、`officeforge_native`、`officeforge_preview`、`officeforge_recalculate`。
 
 | 命名空间 | 相关工具 | 关系 |
 |---|---|---|

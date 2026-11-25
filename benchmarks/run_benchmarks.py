@@ -199,6 +199,7 @@ def main() -> int:
         ("pptx_create", {"action": "create", "type": "pptx", "path": "bench.pptx", "spec": _pptx_spec(slides)}, None),
         ("pptx_read", {"action": "read", "path": "bench.pptx", "format": "outline"}, None),
         ("pptx_audit", {"action": "audit", "type": "pptx", "mode": "deck", "path": "bench.pptx"}, None),
+        ("deck_import", {"action": "deck", "operation": "import", "path": "bench.pptx", "args": {}}, None),
         ("pdf_corrupt", {"action": "read", "path": "corrupt.pdf", "format": "text"}, "INVALID_PDF"),
         ("pdf_empty", {"action": "read", "path": "empty.pdf", "format": "text"}, "INVALID_PDF"),
         ("pdf_encrypted_no_password", {"action": "read", "path": "encrypted.pdf", "format": "text"}, "PDF_PASSWORD_REQUIRED"),

@@ -1,3 +1,225 @@
+## 3.5.7 — 2026-11-25
+
+- **Public web research is allowed**: the PPT intake contract now explicitly permits searching authoritative public sources when key content is missing, provided the assistant announces what it is checking, cites source names/URLs plus access dates, never presents public facts as user-provided data, and never uploads local/private files. Internal company data still requires user files.
+- **Skills**: `officeforge-ppt` and `officeforge` gain a `2.6 联网查找资料` section with the same sourcing, citation and privacy rules.
+- **Tests**: the system-prompt assertion now also checks the public-web-research clause.
+
+## 3.5.6 — 2026-11-25
+
+- **Progressive PPT intake**: the mandatory `officeforge:ppt-intake` prompt now uses layered questioning instead of one fixed list. First round asks only the broad direction (audience/scenario, new vs existing file, `.pptx` vs `.html`); after the answer it restates the direction and plans the next round from those answers (content source, must-have sections/data/page count, brand/template, edit constraints). Rounds are unlimited: each round is planned from the previous answer and stops when the brief is sufficient; visual details still move to a 2–3 page sample.
+- **Skills**: `officeforge-ppt` and `officeforge` carry the same layered intake wording; `whenToUse` metadata now describes the broad-first/plan-next behavior.
+- **Tests**: `tests/test_plugin.mjs` asserts the system prompt contains `progressive`, `First round` and `next round`; plugin suite remains 72 PASS.
+
+## 3.5.5 — 2026-11-25
+
+- **Mandatory PPT intake system prompt**: the plugin now contributes an `officeforge:ppt-intake` system-prompt section. Every new model step sees that a bare "make me a PPT" must first confirm 1–3 facts (audience/scenario, new vs existing file, content source and must-have data, `.pptx` vs `.html`, brand/template) before any `officeforge_*` PPT generation or edit; it must not invent files/numbers. Visual choices move to a 2–3 page sample after the brief. This is additive and does not touch other plugins' prompt sections or the `@adwmc/helm-d` hook chain.
+- **Skill routing metadata**: `officeforge` and `officeforge-ppt` now declare `whenToUse`, and `lib/skill.js` forwards it to `ctx.skills.register()` so the loader catalog can surface the intake requirement even before the skill body is opened.
+- **Tests**: `tests/test_plugin.mjs` adds a system-prompt section assertion and a `whenToUse`-aware skill mock; plugin suite 72 PASS. No engine or document behavior changed.
+
+## 3.5.1 — 2026-11-25
+
+- **Guizang is now a real HTML engine**: `officeforge_deck` and `officeforge_web` accept `engine: "guizang"` and render through the bundled `guizang-ppt-skill` `template-swiss.html` (CSS, motion runtime, presenter shell and speaker notes included), instead of using the old `guizang-*` native-PPTX palette approximation.
+- **Skill intake rules**: `skills/officeforge-ppt/SKILL.md` asks 1–3 key questions before choosing an engine, routes Guizang/magazine/Swiss/web decks to real Guizang HTML, and forbids pretending `engine: "guizang"` native PPTX is full Guizang.
+- **Bundled skill set**: `guizang-ppt-skill`, `guizang-page-skill`, `guizang-social-card-skill` and `humanizer-zh` are packaged under `skills/` and registered by `lib/skill.js`.
+- **Engine tests**: `test_deck_guizang` now proves a real `template-swiss.html` output with slides and speaker notes; all engine tests pass.
+
+## 3.4.1 — 2026-11-25
+
+- **Bundled PPT intake skill**: adds `skills/officeforge-ppt/SKILL.md` and `lib/skill.js`; the plugin registers the `officeforge-ppt` runtime skill and exposes it through `exports["./skills/*"]`.
+- **Adaptive, non-form intake**: asks only the 1–2 missing facts that would materially change the deck; visual choices move to a 2–3 page sample; no fixed questionnaire.
+- **Packaging**: `skills` is included in `files`; plugin tests now 66 with skill registration assertions.
+
+## 3.4.0 — 2026-11-25
+
+- **Design-aware deck editing**: `office_deck_ir.apply_deck_operations` and `office_deck.edit_deck` support `setTheme`, `setTitle`, `addSlide`, `removeSlide`, `replaceSlide`, `appendBlock`, `replaceBlock`, and `setNotes` against an imported `.pptx` or spec deck, then re-render through the normal adapter pipeline.
+- **Node surface**: `officeforge_deck` gains `operation: "edit"` with `output` and `operations` parameters; `test_deck_edit` covers import→edit→render, spec-only base, appended blocks, notes, and invalid index rejection.
+- Engine tests 334, including `test_deck_edit` (7 assertions).
+
+## 3.3.0 — 2026-11-25
+
+- **Advanced Office objects**: `office_deck_ir` and legacy renderer now handle SmartArt, transitions, animations, media lists and comments; `media` can be an array of audio/video objects.
+- **Reverse import fidelity**: `office_ppt_import` preserves shape fill/line/rotation, copies embedded media into the workspace, emits media/smartart blocks, records transitions and animation presence, and keeps comments.
+- **Design adapter full path**: `AnonPptAdapter.create` and `.edit` now render a temporary legacy deck then run Anon1009 beautify instead of returning `ADAPTER_UNSUPPORTED`; loss audit includes `smartart`, `animations` and `morph` for the correct legacy ownership.
+- **Web deck coverage**: `office_webdeck` renders charts, shapes, media and comments in addition to text/tables/images.
+- Engine tests 327, including `test_deck_v306` for anon create, advanced Office object render, import counts and Deck IR roundtrip.
+
+## 3.2.0 — 2026-11-24
+
+- **zbsph full schema**: table headers, line/bar/pie chart options, shapes/paths, lines/arrows, notes, solid/image backgrounds, safe-area/overlap declarations; Anon1009's four built-in templates (`business-blue`, `academic-white`, `tech-dark`, `pitch-bold`) are resolved from their `deck.yaml` themes.
+- **Full catalog verification**: added `tests/test_ppt_bridges.mjs`; real render checks cover 24 themes, 8 master presets, 20 scenario templates, 82 layouts and 4 Vate templates — 140 PASS.
+- **Studio bridge fix**: error responses are emitted once (no duplicated JSON), so failed renders produce a stable single error object.
+- `office_deck_registry` advertises zbsph safeArea/overlap/tableHeader/chartOptions features so loss audit and auto-selection reflect the actual schema.
+
+## 3.1.0 — 2026-11-24
+
+- **Unified plugin-page UI**: `lib/client.js` now has both environment check and capabilities panel actions; `GET /officeforge/capabilities` exposes dsh-ppt counts and the design-token catalog to the plugin detail page.
+- **Offline and release packaging**: `scripts/build_offline.py` builds a cross-machine zip with install/check scripts; `.github/workflows/release.yml` builds and attaches release assets; `docs/PUBLISHING.md` documents npm, GitHub, awesome-dsh-plugin and dsh-plugin-catalog paths.
+- **Hardening**: fuzz coverage extended to deck import/verify/lossAudit/render malformed inputs (45 cases), added a deck-import benchmark (13 cases), and updated the regression baseline.
+
+## 3.0.0 — 2026-11-24
+
+- **Design-token catalog**: `officeforge_deck operation: "designCatalog"` lists the bundled Anon1009 themes, Guizang palettes, Composer/Office themes and their families; `capabilities` also includes the same catalog.
+- **Reverse import**: `officeforge_deck operation: "import"` parses an existing `.pptx` into Deck IR and returns text/table/chart/image/shape/comment/notes/media/transition fidelity counts plus explicit warnings for objects that cannot be rebuilt exactly.
+- **Advanced Office objects**: Deck IR accepts shape/line/media/comment blocks; `create_pptx` now writes slide-level comments, media, transitions, animations, SmartArt and backgrounds instead of silently dropping them.
+- Engine tests 317, including design-catalog counts, PPTX import roundtrip and comment preservation assertions.
+
+## 2.0.0 — 2026-11-24
+
+- **Full dsh-ppt catalog**: `resources/dsh_ppt_catalog.json` records 24 themes, 8 master presets, 20 scenario templates and 82 runtime layouts; `officeforge_deck operation: "capabilities"` exposes it together with the adapter matrix.
+- **Studio masters/templates**: studio bridge accepts `master` (named preset, mapped to theme/brand/chrome) and `template` (scenario template id); raw legacy master objects explicitly fall back to legacy.
+- **Static loss audit**: `officeforge_deck operation: "lossAudit"` returns selected adapter, required/supported/lost feature sets and `lossless`, with no file rendering.
+- Engine tests 311, including dsh-ppt catalog counts, master/template rendering and loss audit assertions.
+- **zbsph/PPTD**: shapes, lines, backgrounds, table/chart/image and notes remain on the native PPTD path; unsupported Office-only objects still fall back to legacy.
+
+## 1.17.0 — 2026-11-24
+
+- **zbsph shapes/background**: `office_ppt_zbsp_bridge.mjs` now maps basic `shapes` (`rect`/`roundRect`/`ellipse`/`triangle`/arrow/chevron/pentagon/hexagon/flowchart shapes), `lines`, and per-slide `background` into native PPTD elements. Unsupported media/comments/master/morph/animation/SmartArt still fall back to legacy.
+- **Adapter selection**: `office_deck_registry` now treats `shapes`/`background` as zbsph-capable features and auto selects zbsph for shape/background decks when no legacy-only objects are present.
+- Engine tests 304, including zbsph shape/line and background preservation plus auto-selection for shape/background decks.
+
+## 1.16.0 — 2026-11-24
+
+- **Designed PPT by default**: `pptxEngine` now defaults to `studio`; a plain `officeforge_create` PowerPoint uses the designed dsh-ppt renderer instead of the legacy path.
+- **Anon1009 beautify by default**: new `beautifyEngine` setting defaults to `anon1009`; `officeforge_beautify` routes to the bundled Anon1009 aesthetic adapter, with `engine: "builtin"` retaining the original theme/normalize path.
+- Adds `engine` parameter to `officeforge_beautify`; aliases friendly theme names (`forge`, `consulting`, `ocean`, etc.) to Anon1009 themes.
+- Engine tests 301, including the Anon1009 beautify adapter test.
+
+## 1.15.0 — 2026-11-24
+
+- **Render auto-verify**: `officeforge_deck` `operation: "render"` accepts `verify: true`; after writing the `.pptx` it renders every slide through the host officeKit and reuses the same verifier, returning the result as `verification`.
+- Adds `verifyOutputDir` to keep auto-verify PNGs separate from the deck output; `report`/`reportFormat` continue to work for both `verify` and auto-verify.
+- Plugin tests 61.
+
+## 1.14.0 — 2026-11-24
+
+- **Verification reports**: `officeforge_deck` `operation: "verify"` accepts `report` and optional `reportFormat`; the rendered-slide result is written as JSON or HTML (extension selects the default format) and returned as a workspace-relative `report` path.
+- HTML reports contain the score/valid status, checks, issues, and per-slide summary; JSON reports keep the full machine-readable result.
+- Plugin tests 60, including JSON and HTML report assertions.
+
+## 1.13.0 — 2026-11-24
+
+- **Rendered-slide verification**: `officeforge_deck` adds `operation: "verify"`; it renders every slide to PNG through the host officeKit, then checks page count, blank pages, image dimensions, shape bounds, expected title coverage, and missing fonts.
+- Results include `score`, `valid`, structured `checks`, per-slide summaries, and issue codes (`BLANK_RENDER`, `EMPTY_SLIDE`, `SHAPE_OUT_OF_BOUNDS`, `TITLE_MISSING`, `RENDER_PAGE_MISSING`, `RENDER_TOO_SMALL`).
+- Engine tests 300, including clean and blank rendered-page verification.
+
+## 1.12.0 — 2026-11-24
+
+- **Automatic PPT adapter selection**: `officeforge_deck` with `engine: "auto"` now inspects Deck IR features (theme/template, table/chart/image, Office-only objects) and selects `legacy`, `studio`, `zbsph`, or `guizang`; the result includes `adapterDecision` with required/unsupported features and a human-readable reason.
+- Explicit engine requests remain unchanged; unavailable external adapters still raise `ADAPTER_UNAVAILABLE` with an installation hint.
+- Engine tests 294, including plain/designed/table/Office-only auto-selection cases.
+
+## 1.11.0 — 2026-11-24
+
+- **Template Pack validation**: `officeforge_deck` adds `operation: "validate"` with optional `pack`; it checks manifest fields, asset files, template ids/slides, and layout references without rendering.
+- `validate_template_pack()` reports machine-readable `errors`/`warnings` and per-pack `themeCount/layoutCount/templateCount`; unknown pack ids return `TEMPLATE_PACK_NOT_FOUND`.
+- Engine tests 290, including built-in pack validation and a deliberately broken external pack.
+
+## 1.10.0 — 2026-11-24
+
+- Word `updateFields` via COM refreshes fields and table of contents, then saves a DOCX copy.
+- zbsph adapter discovery now checks pnpm-hoisted profile packages, not just the plugin-local `node_modules`.
+- Engine tests 285.
+
+## 1.9.1 — 2026-11-24
+
+- 修复 Word 审计对文档标题的误报：标题后接更深层级标题属于正常大纲结构，不再记为 `orphan_heading`。
+- 新增 `document title followed by chapter is not an orphan heading` 测试；engine 282 项 PASS。
+
+## 1.9.0 — 2026-11-24
+
+- **Storyboard Markdown**：`officeforge_deck` 的 `storyboard` 新增 `format: "markdown"`，返回可直接放进文档/PR 的 Markdown 提纲（标题、主题、每页 layout/blocks/notes/时长）。
+- **测试**：`test_deck_storyboard` 增加 2 项 Markdown 断言，engine 281 项 PASS。
+
+## 1.8.0 — 2026-11-24
+
+- **Built-in template packs**：`resources/template_packs.json` 新增 `officeforge-academic`（论文汇报/学位答辩）与 `officeforge-pitch`（融资路演/产品发布）；pack 内模板通过 `templatePack` + `template` 解析，渲染仍走现有 legacy/studio 后端。
+- **打包**：`files` 增加 `resources/packs/**`，包内自带模板资产。
+- **测试**：`test_deck_builtin_packs` 4 项 PASS，engine 279 项 PASS。
+
+## 1.7.0 — 2026-11-24
+
+- **Deck storyboard**：`officeforge_deck` 新增 `operation: "storyboard"`，返回每页的 layout、blockTypes、notes 与 `estimatedSeconds`，并给出 `totalEstimatedSeconds`；纯规划，不写文件。
+- **测试**：`test_deck_storyboard` 4 项 PASS，engine 275 项 PASS。
+
+## 1.6.0 — 2026-11-24
+
+- **zbsph adapter**：`lib/office_ppt_zbsp_bridge.mjs` 现在把 `table`、`chart`、`image` 转成 PPTD 原生元素（`elementType: table/chart/image`），不再回退 legacy；`media/comments/master/background/shapes/transition/animation/SmartArt/morph` 仍明确 `ZBSPH_UNSUPPORTED` 并回退。
+- **测试**：`test_deck_zbsp` 增加 table/chart/image 持久化断言，engine 271 项 PASS。
+
+## 1.5.1 — 2026-11-24
+
+- **修复**：`probe` 的 `pptx.engines` 现在返回 `auto` 加全部已注册 adapter（legacy/studio/zbsph/anon1009/guizang/composer），doctor 不再显示旧引擎清单。
+
+## 1.5.0 — 2026-11-23
+
+- **Bundled composer web adapter**：`ComposerPptAdapter` 用内置 `office_webdeck` 渲染单文件 HTML deck；`officeforge_deck` 的 `engine: "composer"` 可用于 `render`，输出 `.html`，并保留 `officeforge_web` 的独立入口。
+- **Adapter Registry**：`composer` 从描述条目变为内置 web-deck adapter；`guizang` 的内置 9 套调色板仍可用。
+- **测试**：新增 `test_deck_composer`（4 项：available、kind、adapter/type、html 落盘），engine 268 项 PASS；plugin 55、config 14、compatibility 54。
+- **文档**：README/README.zh、DESIGN、COVERAGE 更新到 v1.5.0；`composer` 的 HTML 输出走 `office_webdeck`，不依赖外部 npm 包。
+
+## 1.4.0 — 2026-11-23
+
+- **Bundled 歸藏 design tokens**：`resources/guizang-themes.json` 内置 9 套 magazine/swiss 调色板（ink-classic、indigo-porcelain、forest-ink、kraft-paper、dune、ikb、lemon、lemon-green、safety-orange）；`office_pptx._load_themes()` 同时加载主主题与歸藏主题，`officeforge_deck` 可直接用 `engine: "guizang"` + `theme: "ikb"` 渲染原生 `.pptx`。
+- **Adapter Registry**：`guizang` 从描述条目变为内置可用 adapter（`GuizangPptAdapter`），仍保留 `dsh-guizang-design` 完整 skill 作为可选安装；`composer` 继续为可选外部条目。
+- **测试**：新增 `test_deck_guizang`（5 项：catalog available、kind、adapter、palette render、文件落盘），engine 264 项 PASS；plugin 55、config 14、compatibility 54。
+- **文档**：README/README.zh、DESIGN、COVERAGE 更新到 v1.4.0；`resources/guizang-themes.json` 保留上游 MIT 来源说明。
+
+## 1.3.0 — 2026-11-23
+
+- **Bundled Anon1009 aesthetic adapter**：`lib/vendor/anon1009` 内置 MIT 许可的 `ppt_audit.py` / `ppt_beautify.py` / `themes.py` 与主题资产；`lib/office_ppt_anon.py` 提供 `audit_anon` 与 `beautify_anon`，通过 `officeforge_deck` 的 `engine: "anon1009"` 调用。
+- **审计/修复**：`audit` 返回 0–100 score、grade、issueCounts 与逐条 issues；`repair` 执行非破坏式主题、字体、对比度、对齐与页码美化，并写到新的 `.pptx`。
+- **测试**：新增 `test_deck_anon1009`（5 项：fixture、catalog available、audit score、repair output、文件落盘），engine 259 项 PASS；plugin 55、config 14、compatibility 54。
+- **文档**：README/README.zh、DESIGN、COVERAGE、COMPATIBILITY 更新到 v1.3.0；`lib/vendor/anon1009/LICENSE` 保留上游 MIT 许可。
+
+## 1.2.0 — 2026-11-23
+
+- **Real zbsph adapter**：`lib/office_ppt_zbsp_bridge.mjs` 调用本机 `dsh-ppt-studio` 的 `resolveDeck`/`exportPptx`，支持文本、标题、列表、段落、备注的 deck 生成；复杂对象（table/chart/image/media/comments/master/morph/animations/SmartArt）明确 `ZBSPH_UNSUPPORTED` 并回退 legacy。
+- **Adapter selection**：`officeforge_deck` 的 `engine` 可选 `zbsph`；安装 `dsh-ppt-studio` 时使用真实 adapter，未安装时仍返回 `ADAPTER_UNAVAILABLE`。
+- **测试**：`test_deck_zbsp` 与更新后的 `test_deck_v100`，engine 254 项 PASS；plugin 55、config 14、compatibility 54。
+
+## 1.1.0 — 2026-11-23
+
+- **Template Packs**：`template_packs.json` 支持内置包与外部包；外部包通过 `OFFICEFORGE_TEMPLATE_PACKS` 指向目录（目录内放 `template_pack.json`、`themes.json`、`layouts.json`、`templates.json`）或直接指向 manifest 文件；`officeforge_deck` 的 `catalog` 展示每个包的 theme/layout/template 实际数量。
+- **Deck IR**：`normalize_deck` 支持 `templatePack` + `template` 解析包内模板；`deck_to_backend_spec` 不再把已解析的 template 标记传给 legacy 后端，避免二次解析。
+- **测试**：新增 `test_deck_template_pack`（外部包发现、资产计数、包内模板 plan、legacy render），engine 250 项 PASS；plugin 55、config 14、compatibility 54。
+
+## 1.0.0 — 2026-11-23
+
+- **Versioning**：项目结束 0.x 阶段，进入稳定 API 版本线；后续功能版本使用 `1.x.0`，修复版本使用 `1.x.y`。
+- **Adapter Registry**：`lib/office_deck_registry.py` 增加 `zbsph`、`anon1009`、`guizang`、`composer` 四个外部 adapter 描述条目（kind/capabilities/available/hint），`officeforge_deck` 的 `catalog` 可完整列出；未安装的 adapter 明确返回 `ADAPTER_UNAVAILABLE` 并附带安装提示，不会静默回退。
+- **Deck engine 选择**：`officeforge_deck` 的 `engine` 枚举扩展为 `auto|legacy|studio|zbsph|anon1009|guizang|composer`；`auto` 仍只选择 legacy/studio，外部 adapter 必须显式选择。
+- **测试**：新增 `test_deck_v100`（外部 adapter 目录、kind 和 unavailable 行为），engine 246 项 PASS；plugin 55、config 14、compatibility 54。
+
+## 0.18.0 — 2026-11-23
+
+- **Studio adapter 扩容**：`lib/office_ppt_studio_bridge.mjs` 现支持 Deck IR 的 table/chart/image blocks（含 headers/rows、categories/series、图片 path/alt/fit），并支持 `text`/`timeline`/`matrix` 块映射；真正无法由 dsh-ppt 表达的 comments/media/master/morph/animations/SmartArt/shapes 仍明确 `STUDIO_UNSUPPORTED` 并回退 legacy。
+- **Deck IR 完善**：`lib/office_deck_ir.py` 增加 `DECK_BLOCK_TYPES` 校验与 `_blocks_to_legacy_slide` 展平；`resources/deck_schema.json` 同步 block 类型与字段。
+- **测试**：新增 `test_deck_v018`（table/chart/image blocks + 未知 block 拒绝），engine 242 项 PASS；plugin 55、config 14、compatibility 54 通过。
+
+## 0.17.0 — 2026-11-23
+
+- **新增**：Deck IR + Adapter Registry + Template Pack 架构。`lib/office_deck_ir.py` 提供 `normalize_deck`/`deck_to_backend_spec`/`summarize_deck`/`catalog`，支持 `{deck:{...}}` 包装与模板展开；`lib/office_deck_registry.py` 注册 legacy/studio adapter；`lib/office_deck.py` 提供 plan/render/audit/repair/catalog/web。
+- **新增**：`officeforge_deck` 工具（plan/render/audit/repair/catalog/web），共十六个工具；`resources/template_packs.json` 与 `resources/deck_schema.json`。
+- **测试**：`tests/test_engine.py` 新增 `test_deck_v017`（9 项），engine 236 项 PASS；plugin 55、config 14、compatibility 54 PASS；回归基线同步。
+- **文档**：README/README.zh、DESIGN、COVERAGE、COMPATIBILITY 更新到 v0.17.0。
+
+## 0.16.0 — 2026-11-23
+
+- **Studio 后端真正接入 dsh-ppt**：`StudioPptBackend` 通过 `dsh-ppt/deck-advanced` 的 `buildDeckAsync` 渲染支持的纯文本/KPI/items deck；遇到 comments/media/master/morph/animations/SmartArt/图片/表格/图表等对象时自动回退 legacy python-pptx。
+- **桥接层**：新增 `lib/office_ppt_studio_bridge.mjs`，stdin/stdout JSON，明确 `STUDIO_UNSUPPORTED` 信号，不注册 prompt/LLM hook。
+- **依赖**：`dsh-ppt@0.33.0` 作为可选渲染器依赖；不新增 DSH bundle、不改变 `dsh.profile.bundles`。
+- **测试**：engine 227 项 PASS；新增 `studio falls back for unsupported slide objects`；plugin 54、config 14、compatibility 52 PASS。
+
+---
+
+## 0.15.0 — 2026-11-23
+
+- **新增**：PowerPoint 双后端抽象 `lib/office_ppt_backends.py`（`auto` / `legacy` / `studio`），配置项 `pptxEngine`；`auto` 在指定 template/theme 时选择 studio，否则保持 legacy。
+- **新增**：`officeforge_beautify`（主题套用、标题/正文字号与段落间距规范化、before/after deck score、默认备份）与 `officeforge_web`（自包含 HTML deck，16:9、键盘/按钮翻页、打印样式）。
+- **新增**：`officeforge_audit` 的 `pptx` `aesthetic` 模式，附加标题字号检查与 0–100 审美分数。
+- **测试**：`tests/test_engine.py` 新增 `test_ppt_v015`（legacy/studio/auto 选择、aesthetic、beautify、HTML deck、feature 关闭拒绝），engine 226 项 PASS；plugin 54 项、config 14 项、compatibility 52 项 PASS。
+- **文档**：README/README.zh、DESIGN、COVERAGE、COMPATIBILITY 更新到 v0.15.0。
+
 ## 0.14.0 — 2026-11-22
 
 - **新增**：插件页一键环境检查卡片。`lib/client.js` 的 `OfficeForgeStatus` 增加“检查环境”按钮，点击 `fetch('/officeforge/doctor')` 并渲染 `health`、`summary` 与逐项 `checks`（含 `remedy`）；卡片保持只读，不写配置、不执行文档操作。

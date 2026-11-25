@@ -58,7 +58,9 @@
       "templates",
       "master",
       "comments",
-      "media"
+      "media",
+      "beautify",
+      "web"
     ]
   }
 }

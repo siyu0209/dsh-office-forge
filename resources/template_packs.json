@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "packs": [
+    {
+      "id": "officeforge-core",
+      "label": "Office Forge Core",
+      "version": "1.0.0",
+      "license": "MIT",
+      "source": "built-in",
+      "enabled": true,
+      "themes": "resources/themes.json",
+      "layouts": "resources/layouts.json",
+      "templates": "resources/templates.json"
+    },
+    {
+      "id": "officeforge-academic",
+      "label": "Office Forge Academic",
+      "version": "1.0.0",
+      "license": "MIT",
+      "source": "built-in",
+      "enabled": true,
+      "themes": "resources/themes.json",
+      "layouts": "resources/layouts.json",
+      "templates": "resources/packs/academic/templates.json"
+    },
+    {
+      "id": "officeforge-pitch",
+      "label": "Office Forge Pitch",
+      "version": "1.0.0",
+      "license": "MIT",
+      "source": "built-in",
+      "enabled": true,
+      "themes": "resources/themes.json",
+      "layouts": "resources/layouts.json",
+      "templates": "resources/packs/pitch/templates.json"
+    }
+  ]
+}

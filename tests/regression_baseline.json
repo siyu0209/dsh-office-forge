@@ -1,13 +1,15 @@
 {
-  "date": "2026-11-22",
-  "enginePass": 216,
-  "fuzzPass": 37,
-  "pluginPass": 52,
+  "date": "2026-11-25",
+  "enginePass": 334,
+  "fuzzPass": 45,
+  "pluginPass": 72,
   "configPass": 14,
-  "compatibilityPass": 48,
+  "compatibilityPass": 54,
   "clientPass": 0,
   "clientHostPass": 0,
-  "benchmarkPass": 12,
+  "benchmarkPass": 13,
   "comCleanupPass": 3,
-  "dshProfilePass": 0
+  "dshProfilePass": 0,
+  "updated": "2026-11-25",
+  "pptBridgePass": 140
 }

@@ -37,6 +37,7 @@ SUITES: list[tuple[str, list[str], str | None, str, str]] = [
 
 OPTIONAL_SUITES: list[tuple[str, list[str], str | None, str, str]] = [
     ("benchmarks", [PYTHON, "benchmarks/run_benchmarks.py"], r"^PASS ", "BENCHMARK PASSED", "benchmarkPass"),
+    ("pptBridges", ["node", "tests/test_ppt_bridges.mjs"], r"^PASS ", "PPT BRIDGE TESTS PASSED", "pptBridgePass"),
     ("comCleanup", [PYTHON, "tests/test_com_cleanup.py"], r"^PASS ", "COM CLEANUP TESTS PASSED", "comCleanupPass"),
     ("dshProfile", ["node", "tests/test_dsh_profile.mjs"], r"^  PASS", "DSH PROFILE TESTS PASSED", "dshProfilePass"),
 ]
@@ -76,7 +77,7 @@ def main() -> None:
         if status == "FAIL":
             failures.append(label)
     if QUICK:
-        print("quick mode: skipped comCleanup and dshProfile")
+        print("quick mode: skipped benchmarks, pptBridges, comCleanup and dshProfile")
     else:
         for label, command, pattern, marker, key in OPTIONAL_SUITES:
             count, status = run_suite(label, command, pattern, marker, key)

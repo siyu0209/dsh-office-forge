@@ -51,10 +51,10 @@ function check(condition, label) {
   console.log(`  PASS  ${label}`);
 }
 
-const expected = ["officeforge_read", "officeforge_create", "officeforge_edit", "officeforge_template", "officeforge_audit", "officeforge_doctor", "officeforge_batch", "officeforge_export", "officeforge_convert", "officeforge_preview", "officeforge_recalculate", "officeforge_pdf", "officeforge_native"];
+const expected = ["officeforge_read", "officeforge_create", "officeforge_edit", "officeforge_template", "officeforge_audit", "officeforge_beautify", "officeforge_web", "officeforge_deck", "officeforge_doctor", "officeforge_batch", "officeforge_export", "officeforge_convert", "officeforge_preview", "officeforge_recalculate", "officeforge_pdf", "officeforge_native"];
 
 try {
-  check(inject.join(",") === "tools,fs,workingDirectory", "inject contract");
+  check(inject.join(",") === "tools,fs,workingDirectory,skills", "inject contract");
   check(typeof Config === "function" && name === "dsh-office-forge", "entry identity");
 
   apply(makeCtx(), { pythonPath: PYTHON });
@@ -91,8 +91,10 @@ try {
   // Static isolation: no prompt/LLM/middleware registration in source.
   const source = readFileSync(join(process.cwd(), "lib/index.js"), "utf8");
   const codeOnly = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-  const forbidden = ["systemPrompt", "system-prompt", "middleware", "llm.stream", "llm/stream", "on(\"llm", "on('llm", "hcot", "attack-scheduler", "advisory"];
+  const forbidden = ["middleware", "llm.stream", "llm/stream", "on(\"llm", "on('llm", "hcot", "attack-scheduler", "advisory"];
   for (const term of forbidden) check(!codeOnly.includes(term), `code avoids ${term}`);
+  check(codeOnly.includes("systemPrompt.section") && codeOnly.includes("officeforge:ppt-intake"), "PPT intake is an additive system-prompt section");
+  check(!codeOnly.includes("complete: true") && !codeOnly.includes("system-prompt/assemble"), "PPT intake does not replace or intercept the host prompt");
 
   console.log("COMPATIBILITY TESTS PASSED");
 } finally {

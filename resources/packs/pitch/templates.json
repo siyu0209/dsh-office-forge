@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "templates": [
+    {
+      "id": "pitch-deck",
+      "label": "融资路演",
+      "theme": "sunset",
+      "slides": [
+        {"layout": "cover", "title": "融资路演", "subtitle": "让复杂的事变得简单"},
+        {"layout": "statement", "title": "市场痛点", "subtitle": "一个被忽视的关键问题"},
+        {"layout": "kpi", "title": "核心数据", "subtitle": "增长、留存与效率"},
+        {"layout": "comparison", "title": "竞争格局", "subtitle": "我们与替代方案"},
+        {"layout": "closing", "title": "融资计划", "subtitle": "资金用途与里程碑"}
+      ]
+    },
+    {
+      "id": "product-launch",
+      "label": "产品发布",
+      "theme": "ocean",
+      "slides": [
+        {"layout": "cover", "title": "产品发布", "subtitle": "New product, new workflow"},
+        {"layout": "bullets", "title": "用户问题", "bullets": ["现状", "痛点", "机会"]},
+        {"layout": "cards", "title": "核心能力", "subtitle": "三个关键能力"},
+        {"layout": "timeline", "title": "发布路线", "subtitle": "从内测到正式版"},
+        {"layout": "closing", "title": "开始使用", "subtitle": "下载与反馈"}
+      ]
+    }
+  ]
+}

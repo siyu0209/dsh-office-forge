@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/siyu0209/dsh-office-forge/resources/deck_schema.json",
+  "title": "Office Forge Deck IR",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "slides"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "theme": {
+      "type": "string"
+    },
+    "template": {
+      "type": "string"
+    },
+    "slideSize": {
+      "type": "string",
+      "enum": [
+        "16:9",
+        "4:3"
+      ]
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "slides": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slide"
+      }
+    }
+  },
+  "$defs": {
+    "slide": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "layout": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "subtitle": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kicker": {
+          "type": "string"
+        },
+        "bullets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "paragraphs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "kpis": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "table": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "chart": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "object"
+            ]
+          }
+        },
+        "notes": {
+          "type": "string"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        },
+        "background": {
+          "type": "string"
+        },
+        "transition": {
+          "type": [
+            "string",
+            "object"
+          ]
+        },
+        "animation": {
+          "type": [
+            "string",
+            "object"
+          ]
+        },
+        "master": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "block": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "title",
+            "subtitle",
+            "text",
+            "bullets",
+            "paragraphs",
+            "paragraph",
+            "kpi",
+            "kpis",
+            "metrics",
+            "stats",
+            "table",
+            "chart",
+            "image",
+            "images",
+            "quote",
+            "note",
+            "notes",
+            "timeline",
+            "matrix",
+            "shape",
+            "shapes",
+            "line",
+            "lines",
+            "media",
+            "comment",
+            "comments",
+            "smartart",
+            "transition",
+            "animation"
+          ]
+        },
+        "value": {},
+        "text": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array"
+        },
+        "headers": {
+          "type": "array"
+        },
+        "rows": {
+          "type": "array"
+        },
+        "table": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "chart": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "image": {
+          "type": [
+            "string",
+            "object"
+          ]
+        },
+        "images": {
+          "type": "array"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "shape": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "effect": {
+          "type": "string"
+        },
+        "transition": {
+          "type": [
+            "string",
+            "object"
+          ]
+        },
+        "animation": {
+          "type": [
+            "string",
+            "object"
+          ]
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

@@ -7,7 +7,7 @@
 
 **Install:** `dsh plugin --profile <profile> add dsh-office-forge` · [npm](https://www.npmjs.com/package/dsh-office-forge) · [GitHub Release](https://github.com/siyu0209/dsh-office-forge/releases/latest)
 
-Office Forge is a self-contained DSH bundle that gives an agent thirteen independent tools for working with Word, Excel, PowerPoint, and PDF files. It reads, creates, edits, audits, previews, converts, batch-processes, and templates documents without launching an Office UI. All document work runs in short-lived Python subprocesses; the Node layer only handles workspace authorization, argument validation, subprocess transport, and optional host integration.
+Office Forge is a self-contained DSH bundle that gives an agent sixteen independent tools for working with Word, Excel, PowerPoint, and PDF files. It reads, creates, edits, audits, previews, converts, batch-processes, and templates documents without launching an Office UI. All document work runs in short-lived Python subprocesses; the Node layer only handles workspace authorization, argument validation, subprocess transport, and optional host integration.
 
 The plugin is an independent implementation. It bundles no third-party office runtime and does not depend on any other document plugin.
 
@@ -21,6 +21,7 @@ The plugin is an independent implementation. It bundles no third-party office ru
 - **Agent-friendly** — every tool accepts and returns lossless JSON, reports stable error codes, and is safe to call from a conversation.
 - **Workspace-safe** — lexical and host-level path checks, atomic writes, bounded input/output, no recursion.
 - **Configurable** — module and feature switches for Word, Excel, PowerPoint, and PDF capabilities.
+- **Bundled `officeforge-ppt` skill**: ships the PPT intake rules, sample-first flow, and tool routing with the plugin; no fixed questionnaire, only questions that materially change the deck.
 - **Diagnosable** — `officeforge_doctor` and a read-only plugin-page card report exactly which optional backends are available.
 
 ## Requirements
@@ -31,7 +32,7 @@ The plugin is an independent implementation. It bundles no third-party office ru
 | Node.js | `>= 20` |
 | Python | Python 3.12 with `python-docx`, `openpyxl`, `python-pptx`; the DSH bundled runtime already includes these |
 | PDF | `pypdf` is vendored inside the plugin; no external PDF service is required |
-| Microsoft Office COM | Optional, Windows only, for native PivotTable, native SmartArt, revisions, PDF export, and legacy conversion |
+| Microsoft Office COM | Optional, Windows only, for native PivotTable, native SmartArt, Word field/TOC refresh, revisions, PDF export, and legacy conversion |
 | LibreOffice | Optional, for legacy `.doc/.xls/.ppt` conversion when COM is unavailable |
 | OCR | Optional, requires PyMuPDF, pytesseract, and the Tesseract executable; `officeforge_doctor` reports missing pieces |
 
@@ -46,13 +47,13 @@ The package is published at <https://www.npmjs.com/package/dsh-office-forge>.
 dsh plugin --profile <profile> add dsh-office-forge
 
 # Pin a specific version
-dsh plugin --profile <profile> add dsh-office-forge@0.14.0
+dsh plugin --profile <profile> add dsh-office-forge@3.4.1
 ```
 
 ### From GitHub Releases
 
 ```bash
-dsh plugin --profile <profile> add https://github.com/siyu0209/dsh-office-forge/releases/download/v0.14.0/dsh-office-forge-0.14.0.tgz
+dsh plugin --profile <profile> add https://github.com/siyu0209/dsh-office-forge/releases/download/v3.4.1/dsh-office-forge-3.4.1.tgz
 ```
 
 ### From the DSH plugin page
@@ -62,7 +63,7 @@ Open **Plugins → Install**, enter `dsh-office-forge`, or drop the release `.tg
 ### From a local tarball
 
 ```bash
-dsh plugin --profile <profile> add /path/to/dsh-office-forge-0.14.0.tgz
+dsh plugin --profile <profile> add /path/to/dsh-office-forge-3.4.1.tgz
 ```
 
 Or add the package to the profile's dependencies and `dsh.profile.bundles` in the usual DSH way. The bundle exposes `dsh.bundle.patch`, `dsh.client`, locale files, and the icon required by the DSH plugin page.
@@ -194,11 +195,14 @@ Expected result: `ok: true` when required pieces are present. Optional backends 
 | `officeforge_create` | Create a document from a declarative spec. Word supports sections, headings, bullets, numbered lists, tables, headers/footers, page setup, page numbers, TOC, images, hyperlinks, captions, styles, comments, revisions, mail merge, footnotes, bookmarks, cross-references, citations, bibliography, columns, watermarks, content controls, and `.dotx` templates. Excel supports sheets, CSV/TSV/JSON import, formulas, array formulas, charts (including combo charts), conditional formatting, data validation, comments, images, merged cells, tables, protection. PowerPoint supports slides, layouts, templates, themes, charts, images, tables, text boxes, shapes, connectors, transitions (including morph), animations, SmartArt-style diagrams, notes, sections, comments, media, and masters. |
 | `officeforge_edit` | Apply bounded operations to an existing document. Word: replace, append, images, TOC, captions, styles, fields, comments, tracked revisions, mail merge, footnotes, bookmarks, cross-references, citations, bibliography, columns, watermark, content controls, templates, core properties. Excel: cells, rows, sheets, formats, freeze, filters, charts, conditional formatting, validations, comments, merges, images, formula columns, sorting, deduplication, blank filling, text cleanup, pivot summary, tables, protection. PowerPoint: text, slides, notes, sections, transitions, shapes, text boxes, connectors, animations, SmartArt-style diagrams, comments, media, masters, themes, core properties. |
 | `officeforge_template` | Fill Word/Excel templates with JSON or `.json/.csv/.tsv` data: `{{key}}` placeholders and one-level `{{#each items}}...{{/each}}` loops. |
-| `officeforge_audit` | Read-only audit. Word: `health` (heading jumps, duplicate/orphan headings, unresolved placeholders, long paragraphs, empty paragraph runs) and `profile`. Excel: `health` (formula errors, inconsistent patterns, hardcoded values in formula columns, blank-row breaks, circular references), `profile`, `insight`, `diff`. PowerPoint: `deck` quality, `profile`, `themes`, `layouts`, `templates`. |
+| `officeforge_audit` | Read-only audit. Word: `health` (heading jumps, duplicate/orphan headings, unresolved placeholders, long paragraphs, empty paragraph runs) and `profile`. Excel: `health` (formula errors, inconsistent patterns, hardcoded values in formula columns, blank-row breaks, circular references), `profile`, `insight`, `diff`. PowerPoint: `deck` quality, `aesthetic` design score, `profile`, `themes`, `layouts`, `templates`. |
+| `officeforge_beautify` | Improve an existing `.pptx` in place: by default uses the bundled Anon1009 aesthetic adapter (theme palette, typography, contrast, alignment, table/header accents, slide numbers), returns before/after scores; `engine: "builtin"` keeps the original Office Forge theme/normalize path. |
+| `officeforge_web` | Create a self-contained `.html` presentation from the same slide spec; keyboard/click navigation and print styles, no external runtime. |
+| `officeforge_deck` | Deck IR orchestrator: `plan` normalizes and summarizes a deck, `storyboard` builds a presenter-oriented slide plan with notes and timing (JSON or Markdown), `render` renders `.pptx` through `legacy`, `studio`, or optional `zbsph` (full PPTD text/shape/line/image/table/chart/background/notes schema plus Anon1009 templates)；`engine: "auto"` inspects the Deck IR, selects a compatible renderer, and returns `adapterDecision`; `audit`/`repair` use `legacy`, the bundled `anon1009` aesthetic adapter, or bundled `guizang` design tokens; `composer` renders a single-file HTML deck through the bundled web renderer; `catalog` lists layouts/templates/template packs/adapters with availability and hints; `web` emits HTML; `validate` checks one or all Template Packs; `verify` renders the `.pptx` to real PNG pages through the host officeKit and checks page count, blank pages, dimensions, shape bounds, and title coverage, returning `score`/`checks`/`issues`; pass `report` to write the result as JSON or HTML, or pass `verify: true` on `render` to run the same checks automatically; `designCatalog` lists Anon1009/Guizang/Composer/Office design tokens; `import` parses an existing `.pptx` into Deck IR with fidelity counts and warnings; `edit` applies design-aware Deck IR operations (`setTheme`/`setTitle`/`addSlide`/`removeSlide`/`replaceSlide`/`appendBlock`/`replaceBlock`/`setNotes`) to an imported or spec deck and re-renders it. |
 | `officeforge_doctor` | Read-only runtime diagnostics: Python and Office libraries, bundled PDF engine, COM/pywin32, registered Office applications, LibreOffice, `officeKit`, client bundle, and active modules/features. Every check has `required`, `status`, `detail`, and `remedy`. |
 | `officeforge_convert` | Convert legacy `.doc/.docm/.xls/.xlsm/.ppt/.pptm` through COM/LibreOffice; convert modern/PDF content through the host `officeKit`. |
 | `officeforge_pdf` | File-level PDF operations: `merge`, `split`, `rotate`, `watermark`, `pageNumbers`, `formFields`, `fillForm`, `extractImages`, `ocr`, `encrypt`, `decrypt`. Uses vendored pypdf. |
-| `officeforge_native` | Optional Microsoft Office COM operations: `convert`, `exportPdf`, `acceptRevisions`, `recalculate`, `pivot` (native PivotTable), `smartArt` (native SmartArt). |
+| `officeforge_native` | Optional Microsoft Office COM operations: `convert`, `exportPdf`, `acceptRevisions`, `updateFields` (Word fields and TOC), `recalculate`, `pivot` (native PivotTable), `smartArt` (native SmartArt). |
 | `officeforge_preview` | Render pages, slides, or worksheet ranges to PNG through `officeKit.renderImages`; no Office UI is launched. |
 | `officeforge_recalculate` | Recalculate formulas through `officeKit.recalculate` and save a refreshed workbook. |
 | `officeforge_batch` | Run up to 20 independent create/edit/template jobs in one Python call; each item succeeds or fails independently; nested batches are rejected. |
@@ -234,6 +238,8 @@ Example profile override:
 ```
 
 Full feature names are defined in `resources/features.json`; theme presets are defined in `resources/themes.json`.
+
+Template packs: built-in packs are declared in `resources/template_packs.json` (`officeforge-core`, `officeforge-academic`, `officeforge-pitch`). To add a local pack without editing the package, set `OFFICEFORGE_TEMPLATE_PACKS` to a directory (containing `template_pack.json`, `themes.json`, `layouts.json`, `templates.json`) or to a manifest path. `officeforge_deck` with `operation: "catalog"` lists every pack and its asset counts.
 
 ### Python discovery order
 
@@ -298,7 +304,7 @@ All failures return a stable JSON error object with `code`, `message`, and optio
 
 ## Testing and benchmarks
 
-The repository ships ten test suites plus a benchmark suite. They use temporary directories and mock hosts; none starts DSH or writes to a profile.
+The repository ships eleven test suites plus a benchmark suite. They use temporary directories and mock hosts; none starts DSH or writes to a profile.
 
 | Suite | Purpose |
 |---|---|
@@ -310,9 +316,10 @@ The repository ships ten test suites plus a benchmark suite. They use temporary 
 | `tests/test_compatibility.mjs` | Real host schema validation, tool-name collisions, isolation static checks. |
 | `tests/test_client.mjs` | Client bundle manifest, lazy-CJS shape, slot registration. |
 | `tests/test_client_host.mjs` | Drives the client bundle through the real `dsh-client-modules` client system. |
+| `tests/test_ppt_bridges.mjs` | Real dsh-ppt/studio/zbsph bridge matrix: 24 themes, 8 masters, 20 templates, 82 layouts, 4 Vate templates. |
 | `tests/test_dsh_profile.mjs` | One-shot install in an isolated `DSH_HOME`; verifies profile manifest and bundle declaration. |
 | `tests/run_regression.py` | Runs every suite against `tests/regression_baseline.json`; `--quick` skips optional suites. |
-| `benchmarks/run_benchmarks.py` | 12-case performance/robustness baseline; thresholds in `benchmarks/baseline.json`. |
+| `benchmarks/run_benchmarks.py` | 13-case performance/robustness baseline; thresholds in `benchmarks/baseline.json`. |
 
 ### Local verification
 
@@ -348,6 +355,7 @@ node tests/test_plugin_config.mjs
 node tests/test_compatibility.mjs
 node tests/test_client.mjs
 node tests/test_client_host.mjs
+node tests/test_ppt_bridges.mjs
 "$PYTHON" benchmarks/run_benchmarks.py
 node tests/test_dsh_profile.mjs
 ```

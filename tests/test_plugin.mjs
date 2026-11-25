@@ -12,6 +12,8 @@ const workspace = mkdtempSync(join(tmpdir(), "officeforge-plugin-"));
 const kitRoot = join(workspace, "kit-out");
 mkdirSync(kitRoot, { recursive: true });
 const registered = new Map();
+const registeredSkills = [];
+const promptSections = [];
 const warnings = [];
 const services = new Map();
 const kit = {
@@ -35,6 +37,7 @@ const kit = {
 services.set("officeKit", kit);
 
 let routeRegistration;
+const routes = new Map();
 const ctx = {
   logger: { warn: (message) => warnings.push(String(message)) },
   effect(fn) {
@@ -42,6 +45,20 @@ const ctx = {
     return () => { if (typeof dispose === "function") dispose(); };
   },
   inject(names, callback) {
+    if (names.includes("systemPrompt")) {
+      callback({
+        effect(fn) {
+          const dispose = fn();
+          return () => { if (typeof dispose === "function") dispose(); };
+        },
+        systemPrompt: {
+          section(section) {
+            promptSections.push(section);
+            return () => {};
+          },
+        },
+      });
+    }
     if (!names.includes("webServer")) return;
     callback({
       effect(fn) {
@@ -50,7 +67,8 @@ const ctx = {
       },
       webServer: {
         register(route) {
-          routeRegistration = route;
+          routes.set(route.path, route);
+          routeRegistration = routes.get("/officeforge/doctor") ?? route;
           return () => {};
         },
       },
@@ -84,6 +102,12 @@ const ctx = {
     processPath(target) { return target.absolute; },
   },
   workingDirectory: { async ensure() { return workspace; } },
+  skills: {
+    register(skill) {
+      registeredSkills.push(skill);
+      return () => {};
+    },
+  },
   get(key) { return services.get(key); },
 };
 
@@ -99,10 +123,19 @@ function check(condition, label) {
 
 try {
   console.log(`[plugin] ${name}`);
-  check(inject.join(",") === "tools,fs,workingDirectory", "inject contract is tools/fs/workingDirectory");
+  check(inject.join(",") === "tools,fs,workingDirectory,skills", "inject contract is tools/fs/workingDirectory/skills");
   check(typeof Config === "function", "Config is exported");
   apply(ctx, { pythonPath: PYTHON });
   check(warnings.length === 0, `no registration warnings (${warnings.join(" | ")})`);
+  check(registeredSkills.length === 6, "six bundled skills are registered");
+  check(registeredSkills.some((skill) => skill.name === "officeforge"), "officeforge skill is registered");
+  check(registeredSkills.some((skill) => skill.name === "officeforge-ppt"), "officeforge-ppt skill is registered");
+  check(registeredSkills.some((skill) => skill.name === "guizang-ppt-skill"), "guizang-ppt-skill is registered");
+  check(registeredSkills.some((skill) => skill.name === "guizang-page-skill"), "guizang-page-skill is registered");
+  check(registeredSkills.some((skill) => skill.name === "guizang-social-card-skill"), "guizang-social-card-skill is registered");
+  check(String(registeredSkills.find((skill) => skill.name === "officeforge")?.content || "").includes("需求获取") && String(registeredSkills.find((skill) => skill.name === "officeforge")?.content || "").includes("覆盖全方面"), "officeforge skill carries adaptive intake rules");
+  check(String(registeredSkills.find((skill) => skill.name === "officeforge-ppt")?.content || "").includes("不固定问卷"), "ppt skill carries adaptive intake rules");
+  check(promptSections.some((section) => section.name === "officeforge:ppt-intake" && String(section.text || "").includes("progressive") && String(section.text || "").includes("First round") && String(section.text || "").includes("next round") && String(section.text || "").includes("Do not invent") && String(section.text || "").includes("Public web research") && String(section.text || "").includes("automatically use any search capability")), "system prompt enforces progressive PPT intake and public research rules");
   check(routeRegistration?.path === "/officeforge/doctor", "doctor HTTP route is registered");
   const routeResponse = {
     statusCode: 0,
@@ -123,7 +156,19 @@ try {
   await routeRegistration.handler({ method: "GET" }, getResponse);
   const getBody = JSON.parse(getResponse.body);
   check(getResponse.statusCode === 200 && Array.isArray(getBody.checks) && getBody.checks.length >= 5, `doctor route returns live checks over HTTP (${getResponse.statusCode}: ${getBody.error?.message ?? "ok"})`);
-  const expected = ["officeforge_read", "officeforge_create", "officeforge_edit", "officeforge_template", "officeforge_audit", "officeforge_doctor", "officeforge_batch", "officeforge_export", "officeforge_convert", "officeforge_preview", "officeforge_recalculate", "officeforge_pdf", "officeforge_native"];
+  const capabilitiesRoute = routes.get("/officeforge/capabilities");
+  check(Boolean(capabilitiesRoute), "capabilities HTTP route is registered");
+  const capabilitiesResponse = {
+    statusCode: 0,
+    headers: null,
+    body: "",
+    writeHead(status, headers) { this.statusCode = status; this.headers = headers; },
+    end(body) { this.body = body ?? ""; },
+  };
+  await capabilitiesRoute.handler({ method: "GET" }, capabilitiesResponse);
+  const capabilitiesBody = JSON.parse(capabilitiesResponse.body);
+  check(capabilitiesResponse.statusCode === 200 && capabilitiesBody.dshPpt?.counts?.themes >= 24, "capabilities route returns catalog over HTTP");
+  const expected = ["officeforge_read", "officeforge_create", "officeforge_edit", "officeforge_template", "officeforge_audit", "officeforge_beautify", "officeforge_web", "officeforge_deck", "officeforge_doctor", "officeforge_batch", "officeforge_export", "officeforge_convert", "officeforge_preview", "officeforge_recalculate", "officeforge_pdf", "officeforge_native"];
   for (const toolName of expected) check(registered.has(toolName), `${toolName} registered`);
   check(!registered.has("officeforge_missing"), "no phantom tool registered");
   check(registered.size === expected.length, `exactly ${expected.length} tools registered`);
@@ -173,6 +218,50 @@ try {
   check(audit.issueCount >= 1 && audit.summary.hardcoded_value >= 1, "audit returns workbook health findings");
   const themes = await registered.get("officeforge_audit").execute({ type: "pptx", mode: "themes" }, exec);
   check(themes.themes.length >= 24, "audit lists at least 24 PowerPoint themes without a path");
+
+  const deck = await registered.get("officeforge_deck").execute({
+    operation: "render",
+    path: "plugin-deck.pptx",
+    engine: "legacy",
+    overwrite: true,
+    spec: { slides: [{ title: "Plugin deck" }] },
+  }, exec);
+  check(deck.bytes > 1000, `deck render created ${deck.bytes} bytes`);
+  const verified = await registered.get("officeforge_deck").execute({
+    operation: "verify",
+    path: "plugin-deck.pptx",
+    outputDir: "verify",
+    spec: { slides: [{ title: "Plugin deck" }] },
+  }, exec);
+  check(verified.mode === "verify" && verified.pageCount >= 1, "deck verify returns a rendered report");
+  check(Array.isArray(verified.checks) && verified.checks.length >= 4, "deck verify returns structured checks");
+  const verifiedReport = await registered.get("officeforge_deck").execute({
+    operation: "verify",
+    path: "plugin-deck.pptx",
+    outputDir: "verify-report-out",
+    report: "verify/report.json",
+    reportFormat: "json",
+    spec: { slides: [{ title: "Plugin deck" }] },
+  }, exec);
+  check(verifiedReport.report === "verify/report.json" && JSON.parse(readFileSync(join(workspace, "verify/report.json"), "utf8")).mode === "verify", "deck verify writes a JSON report");
+  const verifiedHtml = await registered.get("officeforge_deck").execute({
+    operation: "verify",
+    path: "plugin-deck.pptx",
+    outputDir: "verify-html-out",
+    report: "verify/report.html",
+    spec: { slides: [{ title: "Plugin deck" }] },
+  }, exec);
+  check(verifiedHtml.report === "verify/report.html" && readFileSync(join(workspace, "verify/report.html"), "utf8").includes("<html"), "deck verify writes an HTML report");
+  const autoVerified = await registered.get("officeforge_deck").execute({
+    operation: "render",
+    path: "plugin-deck-auto.pptx",
+    engine: "legacy",
+    overwrite: true,
+    verify: true,
+    verifyOutputDir: "verify-auto",
+    spec: { slides: [{ title: "Auto verified deck" }] },
+  }, exec);
+  check(autoVerified.verification?.mode === "verify" && Array.isArray(autoVerified.verification?.checks), "deck render can auto-verify the output");
 
   const bad = await registered.get("officeforge_read").execute({
     path: "../escape.docx",

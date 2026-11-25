@@ -7,7 +7,7 @@
 
 **安装：** `dsh plugin --profile <profile> add dsh-office-forge` · [npm](https://www.npmjs.com/package/dsh-office-forge) · [GitHub Release](https://github.com/siyu0209/dsh-office-forge/releases/latest)
 
-Office Forge 是一个自包含的 DSH 插件包，为 Agent 提供十三个互相独立的工具，用来处理 Word、Excel、PowerPoint 和 PDF 文件。它可以读取、创建、编辑、审计、预览、转换、批量处理和填充模板，不需要启动 Office 界面。所有文档处理都在短生命周期的 Python 子进程中完成；Node 层只负责工作区授权、参数校验、子进程传输和可选的宿主集成。
+Office Forge 是一个自包含的 DSH 插件包，为 Agent 提供十六个互相独立的工具，用来处理 Word、Excel、PowerPoint 和 PDF 文件。它可以读取、创建、编辑、审计、预览、转换、批量处理和填充模板，不需要启动 Office 界面。所有文档处理都在短生命周期的 Python 子进程中完成；Node 层只负责工作区授权、参数校验、子进程传输和可选的宿主集成。
 
 插件为独立实现，不捆绑任何第三方 Office 运行时，也不依赖其他文档插件。
 
@@ -21,6 +21,7 @@ Office Forge 是一个自包含的 DSH 插件包，为 Agent 提供十三个互�
 - **适合 Agent 调用**：所有工具接收并返回无损 JSON，提供稳定错误码。
 - **工作区安全**：词法路径检查 + 宿主路径检查、原子写入、输入输出限额、无递归。
 - **可配置**：Word、Excel、PowerPoint、PDF 的模块与细粒度功能开关。
+- **内置 `officeforge-ppt` 技能**：把 PPT 制作/修改的询问规则、样张流程和工具路由随插件分发；不固定问卷，只问会影响制作的关键问题。
 - **可诊断**：`officeforge_doctor` 和插件页只读卡片会明确报告缺少哪些可选后端。
 
 ## 环境要求
@@ -31,7 +32,7 @@ Office Forge 是一个自包含的 DSH 插件包，为 Agent 提供十三个互�
 | Node.js | `>= 20` |
 | Python | Python 3.12，安装 `python-docx`、`openpyxl`、`python-pptx`；DSH 捆绑运行时已包含 |
 | PDF | 插件内置 `pypdf`，不需要外部 PDF 服务 |
-| Microsoft Office COM | 可选，仅 Windows；用于原生 PivotTable、原生 SmartArt、接受修订、PDF 导出、旧格式转换 |
+| Microsoft Office COM | 可选，仅 Windows；用于原生 PivotTable、原生 SmartArt、Word 域/目录更新、接受修订、PDF 导出、旧格式转换 |
 | LibreOffice | 可选；COM 不可用时用于旧 `.doc/.xls/.ppt` 转换 |
 | OCR | 可选，需要 PyMuPDF、pytesseract 和 Tesseract 可执行文件；`officeforge_doctor` 会报告缺失项 |
 
@@ -46,13 +47,13 @@ Office Forge 是一个自包含的 DSH 插件包，为 Agent 提供十三个互�
 dsh plugin --profile <profile> add dsh-office-forge
 
 # 固定版本
-dsh plugin --profile <profile> add dsh-office-forge@0.14.0
+dsh plugin --profile <profile> add dsh-office-forge@3.4.1
 ```
 
 ### 从 GitHub Releases 安装
 
 ```bash
-dsh plugin --profile <profile> add https://github.com/siyu0209/dsh-office-forge/releases/download/v0.14.0/dsh-office-forge-0.14.0.tgz
+dsh plugin --profile <profile> add https://github.com/siyu0209/dsh-office-forge/releases/download/v3.4.1/dsh-office-forge-3.4.1.tgz
 ```
 
 ### 从 DSH 插件页安装
@@ -62,7 +63,7 @@ dsh plugin --profile <profile> add https://github.com/siyu0209/dsh-office-forge/
 ### 从本地 tarball 安装
 
 ```bash
-dsh plugin --profile <profile> add /path/to/dsh-office-forge-0.14.0.tgz
+dsh plugin --profile <profile> add /path/to/dsh-office-forge-3.4.1.tgz
 ```
 
 也可以按 DSH 的常规方式把包加入 profile 的 dependencies 与 `dsh.profile.bundles`。插件包声明了 `dsh.bundle.patch`、`dsh.client`、locale 和 icon，可被 DSH 插件页识别。
@@ -194,11 +195,14 @@ npm pack
 | `officeforge_create` | 用声明式 spec 创建文档。Word 支持章节、标题、项目符号、编号、表格、页眉页脚、页面设置、页码、目录、图片、超链接、题注、样式、批注、修订、邮件合并、脚注、书签、交叉引用、引文、参考文献、分栏、水印、内容控件、`.dotx` 模板。Excel 支持工作表、CSV/TSV/JSON 导入、公式、数组公式、图表（含组合图）、条件格式、数据验证、批注、图片、合并单元格、表格对象、保护。PowerPoint 支持幻灯片、版式、模板、主题、图表、图片、表格、文本框、形状、连接线、切换（含 morph）、动画、SmartArt 风格图、备注、节、批注、媒体、母版。 |
 | `officeforge_edit` | 对现有文档执行有界编辑。Word：替换、追加、图片、目录、题注、样式、字段、批注、修订、邮件合并、脚注、书签、交叉引用、引文、参考文献、分栏、水印、内容控件、模板、核心属性。Excel：单元格、行、工作表、格式、冻结、筛选、图表、条件格式、数据验证、批注、合并、图片、公式列、排序、去重、空白填充、文本清洗、透视摘要、表格对象、保护。PowerPoint：文本、幻灯片、备注、节、切换、形状、文本框、连接线、动画、SmartArt 风格图、批注、媒体、母版、主题、核心属性。 |
 | `officeforge_template` | 用 JSON 或 `.json/.csv/.tsv` 数据填充 Word/Excel 模板：`{{key}}` 占位符和一层 `{{#each items}}...{{/each}}` 循环。 |
-| `officeforge_audit` | 只读审计。Word：`health`（标题跳级、重复/孤立标题、未清除占位符、超长段落、连续空段落）与 `profile`。Excel：`health`（公式错误、模式不一致、硬编码、空行断链、循环引用）、`profile`、`insight`、`diff`。PowerPoint：`deck` 质量、`profile`、`themes`、`layouts`、`templates`。 |
+| `officeforge_audit` | 只读审计。Word：`health`（标题跳级、重复/孤立标题、未清除占位符、超长段落、连续空段落）与 `profile`。Excel：`health`（公式错误、模式不一致、硬编码、空行断链、循环引用）、`profile`、`insight`、`diff`。PowerPoint：`deck` 质量、`aesthetic` 审美评分、`profile`、`themes`、`layouts`、`templates`。 |
+| `officeforge_beautify` | 原地美化现有 `.pptx`：默认使用内置 Anon1009 审美适配器（主题配色、字体层级、对比度、对齐、表格/页眉强调、页码），返回美化前后评分；`engine: "builtin"` 可切回原 Office Forge 主题/规范化路径。 |
+| `officeforge_web` | 用同一份 slides spec 生成自包含 `.html` 演示：支持键盘/按钮翻页和打印样式，不依赖外部运行时。 |
+| `officeforge_deck` | Deck IR 编排入口：`plan` 规范化并统计 deck；`storyboard` 生成带备注与时长估算的演示提纲（JSON 或 Markdown）；`render` 通过 `legacy`、`studio` 或可选 `zbsph`（完整 PPTD 文本/形状/线条/图片/表格/图表/背景/备注 schema，并支持 Anon1009 模板）渲染 `.pptx`；`engine: "auto"` 会检查 Deck IR、自动选择兼容渲染器并返回 `adapterDecision`；`audit`/`repair` 使用 `legacy`、内置 `anon1009` 审美 adapter 或内置 `guizang` design tokens；`composer` 通过内置 web 渲染器输出单文件 HTML；`catalog` 查看版式/模板/模板包/adapter 及安装提示；`web` 直接输出 HTML；`validate` 校验指定或全部 Template Pack；`verify` 通过宿主 officeKit 把 `.pptx` 真实渲染为 PNG，再检查页数、空白页、尺寸、形状越界与标题覆盖，返回 `score`/`checks`/`issues`；传 `report` 可把结果写成 JSON 或 HTML 报告，`render` 传 `verify: true` 会自动跑同一套检查；`designCatalog` 列出 Anon1009/歸藏/Composer/Office 设计 token；`import` 把现有 `.pptx` 解析成 Deck IR，并返回保真计数与警告；`edit` 对导入或 spec deck 应用设计感知的 Deck IR 操作（`setTheme`/`setTitle`/`addSlide`/`removeSlide`/`replaceSlide`/`appendBlock`/`replaceBlock`/`setNotes`）并重新渲染。 |
 | `officeforge_doctor` | 只读运行时诊断：Python 与 Office 库、内置 PDF 引擎、COM/pywin32、已注册 Office 应用、LibreOffice、`officeKit`、客户端 bundle、当前 modules/features。每项包含 `required`、`status`、`detail`、`remedy`。 |
 | `officeforge_convert` | 通过 COM/LibreOffice 转换旧 `.doc/.docm/.xls/.xlsm/.ppt/.pptm`；通过宿主 `officeKit` 转换现代格式/PDF。 |
 | `officeforge_pdf` | 文件级 PDF 操作：`merge`、`split`、`rotate`、`watermark`、`pageNumbers`、`formFields`、`fillForm`、`extractImages`、`ocr`、`encrypt`、`decrypt`；使用内置 pypdf。 |
-| `officeforge_native` | 可选 Microsoft Office COM 操作：`convert`、`exportPdf`、`acceptRevisions`、`recalculate`、`pivot`（原生 PivotTable）、`smartArt`（原生 SmartArt）。 |
+| `officeforge_native` | 可选 Microsoft Office COM 操作：`convert`、`exportPdf`、`acceptRevisions`、`updateFields`（Word 域和目录更新）、`recalculate`、`pivot`（原生 PivotTable）、`smartArt`（原生 SmartArt）。 |
 | `officeforge_preview` | 通过 `officeKit.renderImages` 把页面、幻灯片或工作表区域渲染为 PNG，不启动 Office UI。 |
 | `officeforge_recalculate` | 通过 `officeKit.recalculate` 重算公式并保存刷新后的工作簿。 |
 | `officeforge_batch` | 在一次 Python 调用中执行最多 20 个独立的 create/edit/template 任务；每项独立成功或失败；禁止嵌套 batch。 |
@@ -235,6 +239,8 @@ profile 配置示例：
 
 完整功能名见 `resources/features.json`，主题预设见 `resources/themes.json`。
 
+模板包：内置包声明在 `resources/template_packs.json`（`officeforge-core`、`officeforge-academic`、`officeforge-pitch`）。要添加本地模板包而不改包体，把 `OFFICEFORGE_TEMPLATE_PACKS` 指向包含 `template_pack.json`、`themes.json`、`layouts.json`、`templates.json` 的目录（或直接指向 manifest）；`officeforge_deck` 的 `operation: "catalog"` 会列出每个包及其资产数量。
+
 ### Python 发现顺序
 
 1. 配置项 `pythonPath`
@@ -263,7 +269,7 @@ DSH 宿主
        │         ├─ office_com_worker.py  隔离的 COM Worker
        │         └─ office_migrations.py  spec schema 迁移
        ├─ officeKit 桥接          export / preview / recalculate
-       └─ lib/client.js           插件页只读状态卡 + 环境检查
+       └─ lib/client.js           插件页只读状态卡 + 环境检查 + 能力矩阵
 ```
 
 Node 层只做四件事：配置裁剪、工作区路径策略、参数校验、子进程生命周期。所有文档解析与生成都在 Python 中完成；Python 引擎每次调用都是无状态的，每个工具只分发一个 action。
@@ -298,7 +304,7 @@ Node 层只做四件事：配置裁剪、工作区路径策略、参数校验、
 
 ## 测试与性能基线
 
-仓库包含十套测试和一个基准套件。全部使用临时目录和 mock 宿主，不启动 DSH，也不写 profile。
+仓库包含十一套测试和一个基准套件。全部使用临时目录和 mock 宿主，不启动 DSH，也不写 profile。
 
 | 套件 | 用途 |
 |---|---|
@@ -310,9 +316,10 @@ Node 层只做四件事：配置裁剪、工作区路径策略、参数校验、
 | `tests/test_compatibility.mjs` | 真实宿主 schema 校验、工具名冲突、隔离静态检查。 |
 | `tests/test_client.mjs` | 客户端 bundle manifest、lazy-CJS 形态、slot 注册。 |
 | `tests/test_client_host.mjs` | 用真实 `dsh-client-modules` 驱动客户端 bundle。 |
+| `tests/test_ppt_bridges.mjs` | 真实 dsh-ppt/studio/zbsph 桥接矩阵：24 主题、8 master、20 模板、82 版式、4 套 Vate 模板。 |
 | `tests/test_dsh_profile.mjs` | 隔离 `DSH_HOME` 的一次性安装验证。 |
 | `tests/run_regression.py` | 按 `tests/regression_baseline.json` 运行全部套件；`--quick` 跳过可选套件。 |
-| `benchmarks/run_benchmarks.py` | 12 个性能与鲁棒性基准；阈值在 `benchmarks/baseline.json`。 |
+| `benchmarks/run_benchmarks.py` | 13 个性能与鲁棒性基准；阈值在 `benchmarks/baseline.json`。 |
 
 ### 本地验证
 
@@ -348,6 +355,7 @@ node tests/test_plugin_config.mjs
 node tests/test_compatibility.mjs
 node tests/test_client.mjs
 node tests/test_client_host.mjs
+node tests/test_ppt_bridges.mjs
 "$PYTHON" benchmarks/run_benchmarks.py
 node tests/test_dsh_profile.mjs
 ```
@@ -396,7 +404,7 @@ office-forge/
     templates.json             # 10 套 deck 模板
   lib/
     index.js                   # 工具注册、路径策略、Python 传输、officeKit 桥接
-    client.js                  # 只读插件页状态卡与环境检查
+    client.js                  # 只读插件页状态卡、环境检查与能力矩阵
     office_engine.py           # JSON stdin/stdout 引擎入口
     office_common.py           # 路径、原子写、占位符、校验
     office_pdf.py              # PDF 文本提取

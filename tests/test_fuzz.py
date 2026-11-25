@@ -49,6 +49,14 @@ CASES: list[tuple[str, dict]] = [
     ("schema version too high", {"action": "create", "type": "docx", "path": "i.docx", "spec": {"schemaVersion": 99}}),
     ("features not object", {"action": "create", "type": "docx", "path": "j.docx", "spec": {}, "features": "off"}),
     ("deeply nested spec", {"action": "create", "type": "docx", "path": "k.docx", "spec": {"sections": [{"paragraphs": [{"text": "x" * 100}]}] * 3}}),
+    ("deck unknown operation", {"action": "deck", "operation": "teleport"}),
+    ("deck import without path", {"action": "deck", "operation": "import"}),
+    ("deck import wrong extension", {"action": "deck", "operation": "import", "path": "not-a-deck.docx"}),
+    ("deck verify without path", {"action": "deck", "operation": "verify"}),
+    ("deck verify wrong extension", {"action": "deck", "operation": "verify", "path": "not-a-deck.xlsx"}),
+    ("deck loss audit spec not object", {"action": "deck", "operation": "lossAudit", "spec": "nonsense"}),
+    ("deck render spec not object", {"action": "deck", "operation": "render", "path": "out.pptx", "spec": []}),
+    ("deck import traversal", {"action": "deck", "operation": "import", "path": "../../escape.pptx"}),
 ]
 
 
